@@ -119,11 +119,12 @@ Rules:
 - **Granting trust at payout.**
   - `fullReq = D_i` (remaining debt at the moment of winning)
   - `desiredWaiver = fullReq × trustBps / 10 000`
-  - `grantedWaiver = min(desiredWaiver, R − ΣX)`
+  - `grantedWaiver = min(desiredWaiver, R − ΣX − ΣY)`
   - `K_i = fullReq − grantedWaiver − entryDeposit_i − externalCollateral_i`, floored at 0.
     The entry deposit and any posted collateral count toward this.
   - `K_i` is withheld from the payout.
-- **Invariant I1: `ΣX_i ≤ R` at all times.**
+- **Invariant I1: `ΣX_i + ΣY_j ≤ R` at all times.** `X` is waived collateral and `Y` is rebated
+  deposit, and both draw on one budget. Every "available" check below uses `R − ΣX − ΣY`.
 - **Releases.** After each on-time contribution, `D_i −= C` and `K_i` shrinks proportionally:
   `K_i ← K_i·(D_i − C)/D_i`, with the released amount paid to the member. Both `K_i` and `X_i`
   shrink, so I1 still holds.
@@ -134,10 +135,11 @@ Rules:
   - Other members never receive less than promised.
 - **Perks.**
   - *Tie-break when nobody bids:* highest `CreditRegistry.score`, then join order.
-  - *Reduced entry deposit:* the reserve is 0 while a circle forms, so a literal "reduce at join"
-    would never trigger. Proposed instead is a **deposit rebate**. A trusted member deposits the
-    full amount, and later, whenever `R − ΣX` allows, up to `entryDeposit × trustBps` is refunded
-    and booked as exposure. **Please confirm (§9).**
+  - *Reduced entry deposit (**deposit rebate**, approved):* the reserve is 0 while a circle forms,
+    so a trusted member deposits the full amount.
+    - Later, whenever `R − ΣX` allows, up to `entryDeposit × trustBps` is refunded.
+    - The refunded amount `Y_j` counts toward the **same** uncovered-exposure budget as waived collateral.
+    - If that member misses a payment before winning, the remaining deposit is used first, then the reserve covers the rebated part.
 - **Completion.** Leftover `R` is split equally among members with 0 defaults in this circle.
   Ejected members are excluded.
 - **Honest limitation.** FIXED_ORDER circles have no auction discounts, so the reserve only grows
@@ -147,10 +149,8 @@ Rules:
 ### 3.4 Ejection (from your answer 4)
 A non-winner's first miss is covered by their entry deposit. On a second miss (`markDefault`
 after grace), they are ejected.
-- **k** = the number of rounds the ejected member funded, including a round funded by their
-  consumed deposit.
-  - Proposed: count the deposit-funded round. Otherwise that round's winner keeps a C windfall
-    and every other member still nets 0. **Please confirm (§9).**
+- **k** = the number of rounds the ejected member funded, **including the round funded by their
+  consumed deposit** (approved). Otherwise that round's winner would keep a windfall of C.
   - Each winner of those k rounds gets `+C` added to `D_i`.
   - The circle now runs **N−1** rounds, which removes one future contribution (`−C`). So each
     affected winner's total obligation, and therefore their collateral, stays the same.
@@ -160,15 +160,21 @@ after grace), they are ejected.
   like any winner default: collateral first, then the reserve.
 - The ejected member receives `0.9·k·C` at final settlement. `0.1·k·C` goes to `R` and is split
   among the remaining members at completion.
-- After ejection, pots are `(N−1)·C`.
-- Worked example (N=5, C=100 AUSD, no discounts; E misses rounds 2 and 3):
+- **The ejection round is the first post-ejection round.** The round of the *second* miss (the one
+  that triggers ejection) already uses pot `(N−1)·C`, and so does every later round. The circle
+  runs N−1 rounds in total.
+- **This is the only case where a winner receives less than a full `N·C` pot.** Those winners
+  also make one fewer contribution, so their net is unchanged. In code, `potFor(round)` returns
+  `activeMembers(round)·C`, and the reduced pot is emitted in `PayoutMade.pot`.
+- Worked example (N=5, C=100 AUSD, no discounts; E misses rounds 2 and 3, so round 3 is the
+  first post-ejection round):
 
 | Member | Paid in | Received | Net before reserve split |
 | --- | --- | --- | --- |
 | W1 (won r1) | 4×100 + 100 repay = 500 | 500 | 0 |
 | W2 (won r2, funded partly by E's deposit) | 4×100 + 100 repay = 500 | 500 | 0 |
-| W3 (won r3) | 400 | 400 | 0 |
-| W4 (won r4) | 400 | 400 | 0 |
+| W3 (won r3, the ejection round: pot 4×100) | 400 | 400 | 0 |
+| W4 (won r4: pot 4×100) | 400 | 400 | 0 |
 | E (ejected, k = 2) | 100 + 100 deposit | 180 | −20 (penalty → reserve → +5 each to W1–W4) |
 
 - **Invariant I2:** every non-ejected member finishes with net ≥ 0.
@@ -356,9 +362,10 @@ interface ITurnKeeper /* is IReceiver */ {
 Invariants tested in Phase 2:
 - **I0:** `token.balanceOf(circle) == Σ unreleased collateral + Σ deposits + Σ credit balances + current-round pot + R + Σ pending refunds`
   (the reserve and refunds are added to the spec's formula).
-- **I1:** `ΣX_i ≤ R`.
+- **I1:** `ΣX_i + ΣY_j ≤ R` (waived collateral + rebated deposits ≤ reserve).
 - **I2:** every non-ejected member finishes with net ≥ 0.
-- **I3:** no member ever receives a pot below their promised amount, except in the ejection case.
+- **I3:** every payout pot equals `activeMembers·C`. Before any ejection that is `N·C`; from the
+  ejection round on it is `(N−1)·C`. Nothing else ever reduces a pot.
 
 ## 6. Session design
 
@@ -386,10 +393,7 @@ Invariants tested in Phase 2:
 - Monad docs recommend **standard Foundry** via `foundryup` (≥ v1.8.0) with `network = "monad"`. No fork needed.
 - WSL currently only has the `docker-desktop` distro. **Ubuntu isn't installed yet.**
 
-## 9. Still pending from you
-1. Agora bounty criteria (the placeholder was not filled in). I'm designing for AUSD settlement in a cross-border flow and keeping it adaptable.
-2. "One Passkey, Many Keys" criteria (the placeholder was not filled in). One account per user behind `TurnKeyring` until then.
-3. Team names and roles (the placeholder was not filled in).
-4. Git identity (the placeholder was not filled in). See the note in the chat about public emails.
-5. Confirm **k counts the deposit-funded round** (§3.4).
-6. Confirm the **deposit rebate** reading of "reduced entryDeposit" (§3.3).
+## 9. Still pending
+1. Agora bounty criteria: expected before Phase 5. Designing for AUSD settlement in a cross-border flow, kept adaptable.
+2. "One Passkey, Many Keys" criteria: expected before Phase 5. One account per user behind `TurnKeyring`.
+3. Team names and roles: use `TEAM_TBD` in docs until the docs phase.
