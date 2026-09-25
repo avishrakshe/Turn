@@ -1,0 +1,21 @@
+{
+  "name": "@turn/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Turn contract ABIs and deployment addresses (generated from Foundry artifacts).",
+  "exports": {
+    "./abi": "./ts/abi.ts",
+    "./deployments": "./ts/deployments.ts"
+  },
+  "scripts": {
+    "build": "forge build",
+    "abi": "forge build && node scripts/export-abis.mjs"
+  },
+  "dependencies": {
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6"
+  }
+}
