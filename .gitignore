@@ -37,7 +37,6 @@ lcov.info
 
 # ---- Envio ----
 indexer/generated/
-indexer/.envio/
 
 # ---- OS / editor ----
 .DS_Store

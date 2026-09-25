@@ -1,0 +1,264 @@
+# Turn indexer schema. Amounts are token units (AUSD, 6 decimals). Timestamps are unix seconds.
+
+enum CircleStatus {
+  Forming
+  Active
+  Completed
+}
+
+enum CircleMode {
+  FixedOrder
+  Auction
+}
+
+enum MembershipStatus {
+  Active
+  Left
+  Ejected
+}
+
+enum RoundStatus {
+  Open
+  AuctionClosed
+  PaidOut
+  Cancelled
+  Settlement
+}
+
+enum PaymentKind {
+  Paid
+  Covered
+}
+
+"""
+A person's wallet across every circle: their portable savings history and credit.
+"""
+type Member {
+  id: ID!
+  circlesJoined: Int!
+  circlesActive: Int!
+  circlesCompleted: Int!
+  paymentsOnTime: Int!
+  paymentsLate: Int!
+  defaults: Int!
+  totalContributed: BigInt!
+  totalReceived: BigInt!
+  onTimeRateBps: Int!
+  creditScore: Int! @index
+  trustBps: Int!
+  trustLevel: String!
+  displayCurrency: String!
+  firstSeenAt: BigInt!
+  lastActiveAt: BigInt!
+  memberships: [Membership!]! @derivedFrom(field: "member")
+  payments: [Payment!]! @derivedFrom(field: "member")
+  sessions: [Session!]! @derivedFrom(field: "account")
+  bids: [Bid!]! @derivedFrom(field: "member")
+}
+
+"""
+One member's seat in one circle.
+"""
+type Membership {
+  id: ID!
+  circle: Circle! @index
+  member: Member! @index
+  joinIndex: Int!
+  status: MembershipStatus!
+  displayCurrency: String!
+  hasWon: Boolean!
+  wonRound: Int
+  deposit: BigInt!
+  collateral: BigInt!
+  credit: BigInt!
+  paymentsOnTime: Int!
+  paymentsLate: Int!
+  defaults: Int!
+  totalPaid: BigInt!
+  received: BigInt!
+  claimed: BigInt!
+  refundDue: BigInt!
+  repayOwed: BigInt!
+  joinedAt: BigInt!
+}
+
+type Circle {
+  id: ID!
+  creator: Member!
+  mode: CircleMode!
+  status: CircleStatus! @index
+  size: Int!
+  contribution: BigInt!
+  period: Int!
+  maxDiscountBps: Int!
+  bidWindow: Int!
+  gracePeriod: Int!
+  entryDeposit: BigInt!
+  reserveBps: Int!
+  inviteHash: String!
+  memberCount: Int!
+  activeCount: Int!
+  currentRound: Int!
+  totalRounds: Int!
+  inSettlement: Boolean!
+  startTime: BigInt
+  createdAt: BigInt!
+  createdTx: String!
+  completedAt: BigInt
+  "Contributions actually collected from members vs what was due so far."
+  collected: BigInt!
+  expected: BigInt!
+  onTimePayments: Int!
+  latePayments: Int!
+  defaults: Int!
+  ejections: Int!
+  "0-100: weighted on-time share of all due payments, minus ejections."
+  healthScore: Int!
+  reserveBalance: BigInt!
+  exposure: BigInt!
+  totalPaidOut: BigInt!
+  totalDiscount: BigInt!
+  currencies: [String!]!
+  members: [Membership!]! @derivedFrom(field: "circle")
+  rounds: [Round!]! @derivedFrom(field: "circle")
+}
+
+type Round {
+  id: ID!
+  circle: Circle! @index
+  number: Int!
+  start: BigInt!
+  settlement: Boolean!
+  status: RoundStatus!
+  potTarget: BigInt!
+  collected: BigInt!
+  paidCount: Int!
+  bidCount: Int!
+  bestBidBps: Int
+  bestBidder: Member
+  winner: Member
+  discountBps: Int
+  noBids: Boolean
+  pot: BigInt
+  discount: BigInt
+  toReserve: BigInt
+  collateralRequired: BigInt
+  trustWaiver: BigInt
+  netPaid: BigInt
+  paidOutAt: BigInt
+  bids: [Bid!]! @derivedFrom(field: "round")
+  payments: [Payment!]! @derivedFrom(field: "round")
+}
+
+type Bid {
+  id: ID!
+  circle: Circle!
+  round: Round! @index
+  member: Member!
+  discountBps: Int!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type Payment {
+  id: ID!
+  circle: Circle! @index
+  round: Round! @index
+  member: Member! @index
+  kind: PaymentKind!
+  amount: BigInt!
+  creditUsed: BigInt!
+  onTime: Boolean!
+  fromDeposit: BigInt!
+  fromCollateral: BigInt!
+  fromReserve: BigInt!
+  settlement: Boolean!
+  currency: String!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type Payout {
+  id: ID!
+  circle: Circle! @index
+  round: Round!
+  winner: Member! @index
+  pot: BigInt!
+  discount: BigInt!
+  toReserve: BigInt!
+  collateralRequired: BigInt!
+  trustWaiver: BigInt!
+  netPaid: BigInt!
+  currency: String!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type Default {
+  id: ID!
+  circle: Circle! @index
+  round: Round!
+  member: Member! @index
+  fromDeposit: BigInt!
+  fromCollateral: BigInt!
+  fromReserve: BigInt!
+  ejected: Boolean!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+"""
+An onchain auto-pay grant (TurnAccount pull grant): contribution to one circle, amount <= maxAmount, once per period.
+"""
+type Session {
+  id: ID!
+  account: Member! @index
+  circle: Circle! @index
+  maxAmount: BigInt!
+  period: Int!
+  validUntil: BigInt!
+  active: Boolean!
+  pulls: Int!
+  totalPulled: BigInt!
+  grantedAt: BigInt!
+  lastPullAt: BigInt
+  revokedAt: BigInt
+}
+
+"""
+Money moving between display currencies: each contribution flows from the payer's currency to the recipient's.
+"""
+type CorridorStats {
+  id: ID!
+  fromCurrency: String!
+  toCurrency: String!
+  crossBorder: Boolean!
+  volume: BigInt!
+  transfers: Int!
+  circles: Int!
+  updatedAt: BigInt!
+}
+
+"Marker so each circle is counted once per corridor."
+type CorridorCircle {
+  id: ID!
+}
+
+type GlobalStats {
+  id: ID!
+  circlesCreated: Int!
+  circlesActive: Int!
+  circlesCompleted: Int!
+  members: Int!
+  totalSaved: BigInt!
+  totalPaidOut: BigInt!
+  totalDiscount: BigInt!
+  paymentsOnTime: Int!
+  paymentsLate: Int!
+  defaults: Int!
+  ejections: Int!
+  onTimeRateBps: Int!
+  crossBorderVolume: BigInt!
+  activeSessions: Int!
+  updatedAt: BigInt!
+}
