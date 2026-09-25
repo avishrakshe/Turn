@@ -121,7 +121,9 @@ contract Circle is Initializable, ReentrancyGuard {
         uint256 fromCollateral,
         uint256 fromReserve
     );
-    event MemberEjected(address indexed member, uint256 indexed round, uint256 fundedRounds, uint256 refundDue);
+    event MemberEjected(
+        address indexed member, uint256 indexed round, uint256 fundedRounds, uint256 refundDue
+    );
     event RepaymentOwed(address indexed winner, address indexed ejected, uint256 amount);
     event RepaymentPaid(address indexed winner, uint256 amount, uint256 toRefunds, uint256 toReserve);
     event RoundCancelled(uint256 indexed round);
@@ -218,7 +220,9 @@ contract Circle is Initializable, ReentrancyGuard {
     /// @notice Join a forming circle. Pulls the entry deposit (approve this circle first, e.g. in the same batch).
     /// @param inviteSecret Preimage of `inviteHash` from the invite link (ignored when the circle is open).
     function join(bytes32 inviteSecret, bytes3 displayCurrency) external nonReentrant {
-        if (inviteHash != bytes32(0) && keccak256(abi.encodePacked(inviteSecret)) != inviteHash) revert BadInvite();
+        if (inviteHash != bytes32(0) && keccak256(abi.encodePacked(inviteSecret)) != inviteHash) {
+            revert BadInvite();
+        }
         _join(msg.sender, displayCurrency);
     }
 
@@ -411,7 +415,8 @@ contract Circle is Initializable, ReentrancyGuard {
         if (m.hasWon && releaseCollateral && m.collateral > 0) {
             uint256 debtAfter = _debtOf(who, m);
             uint256 debtBefore = debtAfter + due;
-            uint256 keep = debtAfter == 0 ? 0 : Math.mulDiv(m.collateral, debtAfter, debtBefore, Math.Rounding.Ceil);
+            uint256 keep =
+                debtAfter == 0 ? 0 : Math.mulDiv(m.collateral, debtAfter, debtBefore, Math.Rounding.Ceil);
             if (keep > m.collateral) keep = m.collateral;
             uint256 release = m.collateral - keep;
             if (release > 0) {
@@ -721,9 +726,11 @@ contract Circle is Initializable, ReentrancyGuard {
         uint256 k = m.fundedRounds;
         uint256 perRound = c - (c * EJECTION_PENALTY_BPS) / BPS;
         m.refundDue = uint128(k * perRound);
-        // Leftover deposit (if entryDeposit > C) and credit are returned; the refund arrives at completion.
-        m.withdrawable += m.deposit + m.credit;
+        // Leftover deposit (if entryDeposit > C), any collateral they posted, and credit are returned now;
+        // the refund of their contributions arrives at completion.
+        m.withdrawable += m.deposit + m.collateral + m.credit;
         m.deposit = 0;
+        m.collateral = 0;
         m.credit = 0;
         m.rebated = 0;
 

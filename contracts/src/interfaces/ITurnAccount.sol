@@ -40,7 +40,8 @@ interface ITurnAccount {
     error TooFrequent();
     error NotCircle();
 
-    function execute(Call[] calldata calls, uint256 nonce, uint256 deadline, bytes calldata signature) external;
+    function execute(Call[] calldata calls, uint256 nonce, uint256 deadline, bytes calldata signature)
+        external;
     function executeSelf(Call[] calldata calls) external;
 
     function grantPull(address circle, uint128 maxAmount, uint32 period, uint64 validUntil) external;

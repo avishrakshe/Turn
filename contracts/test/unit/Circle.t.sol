@@ -300,7 +300,9 @@ contract CircleTest is TurnTestBase {
     function _quirkyFactory() internal returns (QuirkyToken qt, CircleFactory f) {
         qt = new QuirkyToken();
         f = new CircleFactory(IERC20(address(qt)), address(impl), owner, 1_000e6, 20);
-        for (uint256 i; i < 5; ++i) qt.mint(m[i], START_BALANCE);
+        for (uint256 i; i < 5; ++i) {
+            qt.mint(m[i], START_BALANCE);
+        }
     }
 
     function _quirkyCircle(QuirkyToken qt, CircleFactory f, uint8 n) internal returns (Circle c) {
@@ -488,6 +490,28 @@ contract CircleTest is TurnTestBase {
         // m2 and m3 owe no repayment
         vm.expectRevert(Circle.NothingDue.selector);
         c.markDefault(m[2], r);
+    }
+
+    /// Regression (found by the lifecycle fuzzer): collateral posted by a member who is later ejected is returned.
+    function test_EjectedMemberGetsPostedCollateralBack() public {
+        Circle c = fullCircle(fixedParams(5));
+        vm.prank(m[4]);
+        c.postCollateral(21e6);
+        runRound(c);
+        stopPaying(c, m[4]);
+        warpToRoundStart(c);
+        c.collect();
+        warpPastGrace(c);
+        c.markDefault(m[4], 2);
+        c.closeAuction();
+        c.payout();
+        warpToRoundStart(c);
+        c.collect();
+        warpPastGrace(c);
+        c.markDefault(m[4], 3);
+        assertEq(c.memberInfo(m[4]).collateral, 0);
+        assertEq(c.memberInfo(m[4]).withdrawable, 21e6, "posted collateral returned at ejection");
+        checkAll(c);
     }
 
     function test_SettlementRepaymentDefaultCoveredByCollateral() public {

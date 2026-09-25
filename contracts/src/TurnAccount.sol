@@ -37,7 +37,8 @@ contract TurnAccount is ITurnAccount, EIP712, IERC1271 {
 
     // keccak256(abi.encode(uint256(keccak256("turn.account.v1")) - 1)) & ~bytes32(uint256(0xff))
     // (value from `cast index-erc7201 turn.account.v1`; asserted in TurnAccount.t.sol)
-    bytes32 private constant STORAGE_SLOT = 0x6c07d38f479240588ee4b6ad8c1ffacfd3cbcefe6580fc543815b31c5437a100;
+    bytes32 private constant STORAGE_SLOT =
+        0x6c07d38f479240588ee4b6ad8c1ffacfd3cbcefe6580fc543815b31c5437a100;
 
     IERC20 public immutable token;
     ICircleFactory public immutable factory;
@@ -104,7 +105,9 @@ contract TurnAccount is ITurnAccount, EIP712, IERC1271 {
     function _checkTarget(address target, bytes calldata data) internal view {
         if (target == address(this)) {
             bytes4 sel = data.length >= 4 ? bytes4(data[:4]) : bytes4(0);
-            if (sel != this.grantPull.selector && sel != this.revokePull.selector) revert SelectorNotAllowed(sel);
+            if (sel != this.grantPull.selector && sel != this.revokePull.selector) {
+                revert SelectorNotAllowed(sel);
+            }
             return;
         }
         if (target == address(token) || target == address(factory) || factory.isCircle(target)) return;
@@ -112,7 +115,11 @@ contract TurnAccount is ITurnAccount, EIP712, IERC1271 {
     }
 
     /// @inheritdoc ITurnAccount
-    function hashCalls(Call[] calldata calls, uint256 nonce_, uint256 deadline) public view returns (bytes32) {
+    function hashCalls(Call[] calldata calls, uint256 nonce_, uint256 deadline)
+        public
+        view
+        returns (bytes32)
+    {
         bytes32[] memory hashes = new bytes32[](calls.length);
         for (uint256 i; i < calls.length; ++i) {
             hashes[i] = keccak256(abi.encode(CALL_TYPEHASH, calls[i].target, keccak256(calls[i].data)));
@@ -127,7 +134,10 @@ contract TurnAccount is ITurnAccount, EIP712, IERC1271 {
     // ---------------------------------------------------------------------------------------------
 
     /// @inheritdoc ITurnAccount
-    function grantPull(address circle, uint128 maxAmount, uint32 period, uint64 validUntil) external onlySelf {
+    function grantPull(address circle, uint128 maxAmount, uint32 period, uint64 validUntil)
+        external
+        onlySelf
+    {
         if (!factory.isCircle(circle)) revert NotCircle();
         _s().grants[circle] = PullGrant({
             maxAmount: maxAmount,
@@ -183,7 +193,9 @@ contract TurnAccount is ITurnAccount, EIP712, IERC1271 {
     /// @notice ERC-1271: the account's own key signs for it.
     function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4) {
         (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(hash, signature);
-        if (err == ECDSA.RecoverError.NoError && signer == address(this)) return IERC1271.isValidSignature.selector;
+        if (err == ECDSA.RecoverError.NoError && signer == address(this)) {
+            return IERC1271.isValidSignature.selector;
+        }
         return 0xffffffff;
     }
 

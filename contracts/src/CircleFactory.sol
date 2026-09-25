@@ -40,9 +40,13 @@ contract CircleFactory is ICircleFactory, Ownable, Pausable {
     mapping(address => uint256) public creatorNonce;
     address[] public allCircles;
 
-    constructor(IERC20 token_, address implementation_, address owner_, uint128 maxContribution_, uint8 maxMembers_)
-        Ownable(owner_)
-    {
+    constructor(
+        IERC20 token_,
+        address implementation_,
+        address owner_,
+        uint128 maxContribution_,
+        uint8 maxMembers_
+    ) Ownable(owner_) {
         token = token_;
         implementation = implementation_;
         registry = new CreditRegistry(address(this));
@@ -107,9 +111,10 @@ contract CircleFactory is ICircleFactory, Ownable, Pausable {
     }
 
     function _validate(CircleTypes.Params calldata p) internal view {
-        bool ok = p.n >= MIN_MEMBERS && p.n <= maxMembers && p.contribution > 0 && p.contribution <= maxContribution
-            && p.period >= MIN_PERIOD && p.entryDeposit >= p.contribution && p.reserveBps <= 10_000
-            && p.maxDiscountBps <= MAX_DISCOUNT_CEILING_BPS && uint256(p.bidWindow) + p.gracePeriod < p.period;
+        bool ok = p.n >= MIN_MEMBERS && p.n <= maxMembers && p.contribution > 0
+            && p.contribution <= maxContribution && p.period >= MIN_PERIOD && p.entryDeposit >= p.contribution
+            && p.reserveBps <= 10_000 && p.maxDiscountBps <= MAX_DISCOUNT_CEILING_BPS
+            && uint256(p.bidWindow) + p.gracePeriod < p.period;
         if (p.mode == CircleTypes.Mode.AUCTION) ok = ok && p.bidWindow > 0;
         else ok = ok && p.bidWindow == 0 && p.maxDiscountBps == 0;
         if (!ok) revert InvalidParams();
