@@ -1,19 +1,23 @@
-# Turn — Phase 1 Plan
+# Turn — Phase 1 Plan (final)
 
-Status: **draft, waiting for answers to the open questions in §4**. Written 2026-09-26.
+Written 2026-09-26. This version includes the answers to the Phase 1 questions. Items still pending
+are listed in §9.
 
-## 1. Understanding (one paragraph)
+## 1. Understanding
 
-Turn is an onchain ROSCA ("committee" / chit fund) on Monad. It is built for Indian families
-and Gulf-based migrant workers who already run monthly committees across the UAE→India corridor. N members
-(3–20) each contribute C AUSD per period. Each round one member receives the pot: either in a
-fixed order, or by a discount auction where the discount is shared with everyone else as
-credit. Defaults are covered by an entry deposit (before winning) or by collateral withheld
-from the payout (after winning). The collateral required shrinks as a member builds an onchain credit
-record. The user sees Face ID, their own currency, and plain language. They never see gas,
-addresses, chains, or signatures. mera (passkey EOAs) + EIP-7702 (TurnAccount delegate) + our
-relayer make everything gasless. Envio is the source of truth for history. Chainlink CRE runs
-the rounds and sends FX-priced Telegram notifications.
+Turn is an onchain ROSCA ("committee" / chit fund) on Monad. It is built for Indian families and
+Gulf-based migrant workers who already run monthly committees across the UAE→India corridor.
+- N members (3–20, capped at 10 on mainnet beta) each contribute C AUSD per period.
+- Each round one member receives the pot: either in a fixed order, or by a discount auction where
+  the discount becomes credit for the other members.
+- Defaults are covered first by an entry deposit (before winning) or by collateral withheld from
+  the payout (after winning), then by a per-circle **protection reserve**.
+- Trusted members lock less collateral, but only as much as the reserve can back.
+- The user sees Face ID, their own currency, and plain language. They never see gas, addresses,
+  chains or signatures.
+- mera (passkey EOA) + EIP-7702 (TurnAccount delegate) + our relayer make everything gasless.
+- Envio is the source of truth for history. Chainlink CRE runs the rounds and sends FX-priced
+  Telegram notifications.
 
 ## 2. Verified facts
 
@@ -22,242 +26,370 @@ the rounds and sends FX-priced Telegram notifications.
 | Monad mainnet chain ID | `143` (confirmed via `eth_chainId` = `0x8f`) | docs.monad.xyz/developer-essentials/network-information |
 | Monad testnet chain ID | `10143` (confirmed via `eth_chainId` = `0x279f`) | docs.monad.xyz/developer-essentials/testnets |
 | Testnet RPC / explorer / faucet | `https://testnet-rpc.monad.xyz`, `testnet.monadvision.com`, `testnet.monadscan.com`, `faucet.monad.xyz` | same |
-| Testnet reset | Testnet was reset from genesis on 2025-12-16 | same |
+| Testnet reset | Reset from genesis on 2025-12-16 | same |
 | AUSD mainnet | `0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a`, `decimals()` = **6**, symbol `AUSD` (read on-chain) | docs.agora.finance/developer/contract-deployments |
 | AUSD testnet | `0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC`, `decimals()` = **6**, symbol `AUSD` (read on-chain) | same |
 | Gas charging | Charged on **gas limit**: `value + gas_bid * gas_limit` | docs.monad.xyz/developer-essentials/differences |
 | Mempool / history | No global mempool; full nodes don't serve arbitrary historic state | same |
 | Contract size | 128 KB max code size | same |
-| P256 precompile | `secp256r1` verify precompile at `0x0100` | same |
-| 7702 reserve balance | A delegated EOA's tx that would **reduce** its MON balance below 10 MON reverts unconditionally. If the balance is unchanged or increased, the tx succeeds | docs.monad.xyz/developer-essentials/eip-7702 |
+| P256 precompile | `secp256r1` verify at `0x0100` | same |
+| 7702 reserve balance | A delegated EOA's tx that would **reduce** its MON balance below 10 MON reverts. If the balance is unchanged or increased, the tx succeeds | docs.monad.xyz/developer-essentials/eip-7702 |
 | 7702 CREATE | `CREATE`/`CREATE2` revert when code runs **in the delegated EOA's context** | same |
-| 7702 sponsorship | Type `0x04` txs: the EOA signs an authorization tuple and a sponsor submits it. Delegation persists until changed | same |
-| mera package | `@category-labs/mera`; `getPasskeyPrfOutput`, `createSecp256k1SigningSession`, `toViemAccount` (from `@category-labs/mera/viem`) | mera.category.xyz |
-| mera viem account | `LocalAccount<"mera">` with `signTransaction`, `signMessage`, **`signTypedData` (EIP-712)**, **`signAuthorization` (EIP-7702)** | mera.category.xyz/recipes/send-a-transaction-with-viem |
-| mera sessions | Key held **in memory** only; `end()` zeroes it; the next signature then needs a new passkey ceremony | mera.category.xyz/concepts/signing-sessions |
-| mera accounts | PRF(credential, rpId, salt) → BIP-39 seed → HD derivation by index. Same passkey gives same accounts on every device. Creation takes 1 prompt (2 on authenticators without PRF-at-create) | mera.category.xyz/recipes/create-passkey-accounts |
+| 7702 sponsorship | Type `0x04`: the EOA signs an authorization tuple and a sponsor submits it. Delegation persists until changed | same |
+| Foundry | **Standard Foundry** (`foundryup`, ≥ v1.8.0) with `network = "monad"` in `foundry.toml`. No fork needed | docs.monad.xyz/guides/deploy-smart-contract/foundry |
+| mera package | `@category-labs/mera`: `getPasskeyPrfOutput`, `createSecp256k1SigningSession`; `toViemAccount` from `@category-labs/mera/viem` | mera.category.xyz |
+| mera viem account | `LocalAccount<"mera">` with `signTransaction`, `signMessage`, `signTypedData` (EIP-712), `signAuthorization` (EIP-7702) | mera.category.xyz/recipes/send-a-transaction-with-viem |
+| mera sessions | Key held **in memory** only; `end()` zeroes it; the next signature needs a new ceremony | mera.category.xyz/concepts/signing-sessions |
+| mera accounts | PRF(credential, rpId, salt) → BIP-39 seed → HD derivation by index. Same passkey gives the same accounts on every device. Creation takes 1 prompt (2 on authenticators without PRF-at-create) | mera.category.xyz/recipes/create-passkey-accounts |
 | Envio | HyperIndex/HyperSync support Monad mainnet (`https://monad.hypersync.xyz`) and testnet | envio.dev/chains/monad |
-| CRE on Monad | Monad mainnet (CLI ≥ 1.29) and **testnet (CLI ≥ 1.30, TS SDK ≥ 1.19)** supported | docs.chain.link/cre/supported-networks-ts |
-| CRE forwarders | Testnet simulation `0xB9F79d863261869B234c481D1f9A7af84AeAd192`; testnet production `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`. CRE writes via forwarder → consumer `onReport` (IReceiver) | docs.chain.link/cre/guides/workflow/using-evm-client/forwarder-directory-ts |
-| Mercuryo sandbox | Needs credentials + IP whitelisting from a Mercuryo integration manager | widget.docs.mercuryo.io/guide/getting-started/sandbox |
+| CRE on Monad | Mainnet (CLI ≥ 1.29) and testnet (CLI ≥ 1.30, TS SDK ≥ 1.19) supported | docs.chain.link/cre/supported-networks-ts |
+| CRE forwarders | Testnet: simulation `0xB9F79d863261869B234c481D1f9A7af84AeAd192`, production `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`. Mainnet: simulation `0x9eF6468C5f37b976E57d52054c693269479A784d`, production `0x76c9cf548b4179F8901cda1f8623568b58215E62`. Writes go forwarder → consumer `onReport` | docs.chain.link/cre/guides/workflow/using-evm-client/forwarder-directory-ts |
+| Mercuryo sandbox | Credentials + IP whitelisting from their integration manager | widget.docs.mercuryo.io/guide/getting-started/sandbox |
 
-### Not verified / flagged
-- **Block time.** Search results mention 300 ms blocks after "MIP-12" as well as the 400 ms in the brief.
-  This doesn't affect the design: all timing uses second-granularity `block.timestamp`.
-- **mera fresh-device sign-in.** The docs don't say whether sign-in works with a discoverable credential
-  (no stored `credentialId`). This matters for the stateless test. I'll check in the mera source
-  in Phase 5. If it needs a `credentialId`, it will come from a relayer-side lookup keyed by the
-  WebAuthn user handle, and nothing will be stored in localStorage.
-- **mera mnemonic export.** There's no dedicated API. The recipe derives the mnemonic from the PRF output with
-  `entropyToMnemonic`. Export = re-run that behind a fresh passkey ceremony.
-- **Testnet AUSD funding.** I found no public AUSD faucet on Monad testnet (see Q4).
-- **Mercuryo AUSD on Monad.** Not confirmed as a supported asset (see Q5).
-- **CRE production deploy.** May require early access. CLI simulation is the baseline.
+**Still unverified (checked in the phase that needs it):**
+- Block time (300 ms vs 400 ms). It doesn't matter here, because all timing uses `block.timestamp` seconds.
+- Whether mera fresh-device sign-in works without a stored `credentialId` (Phase 5).
+- mera mnemonic export. There's no dedicated API; we derive the mnemonic with `entropyToMnemonic` behind a fresh ceremony.
+- Whether a CRE production deploy needs early access (Phase 4).
+- Whether Mercuryo supports AUSD on Monad (§9).
 
-## 3. Design decisions from the verified facts
+## 3. Decisions
 
-1. **Auto-pay sessions are enforced by the contract, not by keeping a mera key alive.**
-   mera sessions live in memory and die on reload, so they can't power "prompt-free contribution
-   every month". Instead, the join batch includes `TurnAccount.grantPull(circle, maxAmount=C,
-   period, validUntil=circleEnd)`. After that, `Circle.collect()` calls
-   `TurnAccount(member).pullContribution(round, amount)`, and TurnAccount enforces the
-   scope on-chain:
-   - the caller is a factory-registered Circle with an active grant
-   - `amount ≤ maxAmount`
-   - one pull per round, at least `period` seconds apart (small tolerance)
-   - `block.timestamp ≤ validUntil`
-   - not revoked
+### 3.1 Accounts, sessions, gas
+1. **One account per user.** The app derives the primary mera account (HD index 0).
+   - Derivation sits behind a `TurnKeyring` interface: `derive(purpose: "primary") → Account`.
+   - Adding a "savings vault" key or a recovery key later is a new `purpose` → index mapping, not a rewrite.
+   - No per-circle accounts, until we see the "One Passkey, Many Keys" criteria.
+2. **Auto-pay is enforced by the contract.** mera sessions die on reload, so they can't approve
+   monthly payments. Instead, the join batch includes a `grantPull` that TurnAccount enforces:
+   - the caller must be a factory-registered Circle
+   - `amount ≤ maxAmount (= C)`
+   - one pull per round, at least `period − tolerance` apart
+   - `block.timestamp ≤ validUntil (= circle end)`
+   - the grant hasn't been revoked
 
-   No passkey prompt and no signer are needed per payment. Revocation is an owner-signed
-   (EIP-712) relayed call. A member who isn't delegated (e.g. a judge using MetaMask) falls back to
-   a plain AUSD `transferFrom` allowance.
-2. **One Face ID for onboarding and join.** A single mera ceremony opens an in-memory session that
-   signs the 7702 authorization **and** the EIP-712 batch (approve/join/deposit/grantPull). The
-   relayer submits one type-4 tx. That's one prompt → first confirmed tx.
-3. **Reserve balance is a non-issue by construction.** Users hold 0 MON and TurnAccount rejects
-   any call with `value > 0`, so a delegated EOA's MON balance is never reduced. TurnAccount never
-   uses CREATE. Circle clones are created by the factory in its own context. I'll confirm this on
-   testnet in Phase 3 before building on it.
-4. **Relayer gas.** Because gas is charged on the limit, the relayer runs `eth_estimateGas`, adds
-   a 10% buffer, applies a hard per-call-type cap, and enforces a per-account daily cap. The relayer can
-   censor but can't steal: every relayed call carries the user's EIP-712 signature (nonce, deadline,
-   chainId), and TurnAccount allowlists targets (AUSD, factory, factory-registered Circles, self).
-5. **CRE writes through a receiver.** `TurnKeeper` implements `IReceiver.onReport`, only
-   trusts the CRE forwarder, decodes `(circle, action, args)` and calls the permissionless round
-   function. The Node fallback keeper calls the Circle functions directly with the same decision
-   logic, shared as a TS module.
-6. **Round timeline (per round, from `roundStart`):**
-   `collect` is open from `roundStart` → bids are accepted during `[roundStart, roundStart+bidWindow)` →
-   `closeAuction` → `payout` once every member is **paid** or **covered**. Covered means marked in
-   default after `gracePeriod`, with the shortfall filled from deposit/collateral. So a late payer
-   delays the payout by at most `gracePeriod` and never shrinks the pot. Demo:
-   period 300 s, bidWindow 120 s, grace 60 s.
-7. **Entry deposit counts toward the winner's collateral** (assumption A3). After winning, the member no
-   longer needs a separate deposit, so it's folded into their collateral.
+   Each contribution then needs no prompt and no signer. Members who aren't delegated (e.g. a judge
+   using MetaMask) fall back to an AUSD allowance and `transferFrom`.
+3. **One Face ID for onboarding and the first join.** A single mera ceremony opens an in-memory
+   session that signs the 7702 authorization **and** the EIP-712 batch
+   (`approve` → `join` → `grantPull`). The relayer submits one type-4 tx.
+4. **The 10 MON reserve-balance rule doesn't affect us.** Users hold 0 MON and TurnAccount rejects
+   `value > 0`, so a delegated EOA's MON balance never drops. TurnAccount never uses CREATE, and
+   clones are created in the factory's context. I'll confirm this with a live type-4 tx on testnet
+   at the start of Phase 3.
+5. **Relayer.**
+   - Gas: `eth_estimateGas` + 10% buffer, a hard cap per call type, and a per-account daily cap
+     (gas is billed on the limit).
+   - Rate limiting per IP and per account.
+   - Target allowlist, checked in both the relayer and TurnAccount: AUSD, the factory,
+     factory-registered Circles, and self.
+   - Trust model: it can censor but can't steal, because every call carries the user's EIP-712
+     signature (nonce, deadline, chainId).
+6. **CRE writes through `TurnKeeper`.** It implements `IReceiver.onReport`, accepts only the
+   configured forwarder, decodes `(circle, action, args)` and calls the permissionless round
+   function. The fallback Node keeper calls the same functions directly. Both use one shared
+   TS `decide()` module.
 
-## 4. Open questions (need your answers)
+### 3.2 Round timeline
+Each round runs from `roundStart`:
+1. `collect` is open from `roundStart` and can be retried until the round ends.
+2. Bids are accepted during `[roundStart, roundStart + bidWindow)`.
+3. `closeAuction` runs after the bid window.
+4. `payout` runs once every active member is **paid** or **covered**. Covered means
+   `markDefault` has run after `gracePeriod` and the shortfall was filled from
+   deposit → collateral → reserve.
 
-- **Q1: Agora "Best Cross-Border Payments App on Monad".** Please paste the exact criteria.
-- **Q2: Mera "One Passkey, Many Keys".** Please paste the exact criteria. My guess is that it rewards
-  deriving several keys/accounts from one passkey (mera HD indices). A natural fit for Turn is
-  **one account per circle**, or a separate "savings" account and "spending" account, all from one
-  passkey. I'll hold off until I see the criteria.
-- **Q3: Collateral when trustDiscount > 0.** With trust discount d, collateral covers only
-  (1−d) of the winner's remaining debt. If a trusted winner stops paying entirely, collateral runs
-  out. That breaks "others never receive less" unless something else covers the gap. Options:
-  - **(a) Recommended:** a per-circle **protection reserve** funded by a fixed slice (e.g. 10%) of every
-    auction discount plus ejection penalties. Beyond that, the shortfall is shared pro-rata and
-    disclosed. This is a documented second exception.
-  - (b) Keep trustDiscount, and have the winner's credit record absorb the loss socially (onchain
-    default). Others bear the shortfall. Simpler, but it breaks the promise.
-  - (c) Cap trustDiscount so collateral + entry deposit always ≥ remaining debt
-    (i.e. trust only reduces the lock by at most the deposit). Keeps the promise absolutely, but trust matters much less.
-- **Q4: Ejection refund funding.** An ejected non-winner's past contributions have already gone to
-  earlier winners' pots, so the circle doesn't hold that money. Where does the "refund at end minus 10%" come
-  from? Options:
-  - **(a) Recommended:** the circle ends one round early (N−1 rounds). The refund is funded by an equal
-    extra settlement contribution from members who already won with the ejected member's money.
-    The early winners are the ones who received it, and their collateral backs that obligation.
-  - (b) The refund is deducted pro-rata from remaining pots (the "documented exception").
-- **Q5: Discount credit recipients.** Is the credit split among *all* other active members
-  (including earlier winners), as in a traditional chit fund? I'm assuming **yes**.
-- **Q6: Testnet vs mainnet and funds.** Monad testnet has an official AUSD
-  (`0xa901…22dC`) but I found no public faucet. Options:
-  - **(a)** You ask Agora (bounty contacts) for testnet AUSD.
-  - **(b)** Go mainnet with real AUSD and small amounts. The relayer then needs real MON.
-  - **(c) Fallback:** a clearly labelled `TestAUSD` (6 decimals, faucet) used only if (a) fails. It
-    isn't the Agora token, which would weaken the Agora bounty, so it's a last resort.
-- **Q7: Mercuryo.** Sandbox needs credentials and IP whitelisting from their integration manager. Can
-  you request them now? AUSD-on-Monad support is also unconfirmed. If they only support e.g.
-  USDC on Monad, "Add money" becomes on-ramp USDC, then a swap step, which needs a DEX. Please tell me
-  what they support.
-- **Q8: Team and names** for the pitch, submission, and LICENSE copyright line.
-- **Q9: Foundry on Windows.** `forge` isn't installed here. Options:
-  - Install Foundry natively: `foundryup` needs Git Bash, or there's the Windows binary release.
-  - Use WSL.
-  - Monad's Foundry fork, if needed. I'll check whether it's still recommended.
+So a late payer delays the payout by at most `gracePeriod` and never shrinks the pot.
 
-  Which do you prefer?
+Demo settings: `period = 300 s`, `bidWindow = 120 s`, `gracePeriod = 60 s`.
 
-## 5. Assumptions (I'll proceed on these unless you object)
+### 3.3 Protection reserve and trust (from your answer 3)
 
-- A1: Package manager **pnpm** workspaces (pnpm 11 is installed). Node 24.
-- A2: Testnet first (10143). Mainnet deploy only if Q6(b).
-- A3: Entry deposit counts toward the winner's collateral requirement.
-- A4: FIXED_ORDER mode uses the same pipeline with no bid window. The winner is `order[r]`.
-- A5: If nobody bids, the eligible member with the highest `CreditRegistry.score` wins, with ties broken by join order.
-  Everyone starts with score 0, so this reduces to join order for new users.
-- A6: Credit balances offset the next contribution first. Any leftover credit is claimable at completion.
-- A7: The display currency is stored per member in the indexer via an event (`MemberProfileSet`), not
-  only in the browser, so it survives the stateless test. FX conversion is display-only.
-- A8: Bids above a threshold (e.g. > 10% discount) need a fresh Face ID. Smaller bids go through the
-  in-memory mera session while the app is open. After a reload, any bid requires one Face ID.
-- A9: The feedback prompt stores ratings in a relayer-side store (tiny KV/Postgres) keyed by
-  account. It's off-chain, used only for traction.md, and clearly disclosed.
+State per circle:
+- `R`: reserve balance
+- per winner `i`:
+  - `D_i`: outstanding debt, i.e. remaining contributions + ejection repayments, in AUSD
+  - `K_i`: collateral held
+  - exposure `X_i = D_i − K_i` (≥ 0)
 
-## 6. File tree (target)
+Rules:
+- **Funding.** Each auction payout moves `reserveBps` (default 2000 = 20%) of the discount into
+  `R`. The remaining 80% is split equally as credit to the other active members. Ejection
+  penalties go to `R`.
+- **Granting trust at payout.**
+  - `fullReq = D_i` (remaining debt at the moment of winning)
+  - `desiredWaiver = fullReq × trustBps / 10 000`
+  - `grantedWaiver = min(desiredWaiver, R − ΣX)`
+  - `K_i = fullReq − grantedWaiver − entryDeposit_i − externalCollateral_i`, floored at 0.
+    The entry deposit and any posted collateral count toward this.
+  - `K_i` is withheld from the payout.
+- **Invariant I1: `ΣX_i ≤ R` at all times.**
+- **Releases.** After each on-time contribution, `D_i −= C` and `K_i` shrinks proportionally:
+  `K_i ← K_i·(D_i − C)/D_i`, with the released amount paid to the member. Both `K_i` and `X_i`
+  shrink, so I1 still holds.
+- **A default by winner i.** Cover `c = min(K_i, C)` from collateral and `y = C − c` from the
+  reserve, then `D_i −= C`.
+  - `X_i` falls by exactly `y`, and `R` falls by exactly `y`, so I1 still holds.
+  - Because `y ≤ X_i ≤ R`, the reserve can always pay.
+  - Other members never receive less than promised.
+- **Perks.**
+  - *Tie-break when nobody bids:* highest `CreditRegistry.score`, then join order.
+  - *Reduced entry deposit:* the reserve is 0 while a circle forms, so a literal "reduce at join"
+    would never trigger. Proposed instead is a **deposit rebate**. A trusted member deposits the
+    full amount, and later, whenever `R − ΣX` allows, up to `entryDeposit × trustBps` is refunded
+    and booked as exposure. **Please confirm (§9).**
+- **Completion.** Leftover `R` is split equally among members with 0 defaults in this circle.
+  Ejected members are excluded.
+- **Honest limitation.** FIXED_ORDER circles have no auction discounts, so the reserve only grows
+  from penalties, and trust rarely waives collateral there. Trust still gives the tie-break perk.
+  This will be documented in economics.md.
+
+### 3.4 Ejection (from your answer 4)
+A non-winner's first miss is covered by their entry deposit. On a second miss (`markDefault`
+after grace), they are ejected.
+- **k** = the number of rounds the ejected member funded, including a round funded by their
+  consumed deposit.
+  - Proposed: count the deposit-funded round. Otherwise that round's winner keeps a C windfall
+    and every other member still nets 0. **Please confirm (§9).**
+  - Each winner of those k rounds gets `+C` added to `D_i`.
+  - The circle now runs **N−1** rounds, which removes one future contribution (`−C`). So each
+    affected winner's total obligation, and therefore their collateral, stays the same.
+- **When the repayment is collected:** in a *settlement slot* at the time where round N would have run.
+  Each affected winner therefore still makes exactly N pulls, each ≤ C, so the existing pull grant
+  (`validUntil` = original end) covers it with no new prompt. A missed settlement pull is handled
+  like any winner default: collateral first, then the reserve.
+- The ejected member receives `0.9·k·C` at final settlement. `0.1·k·C` goes to `R` and is split
+  among the remaining members at completion.
+- After ejection, pots are `(N−1)·C`.
+- Worked example (N=5, C=100 AUSD, no discounts; E misses rounds 2 and 3):
+
+| Member | Paid in | Received | Net before reserve split |
+| --- | --- | --- | --- |
+| W1 (won r1) | 4×100 + 100 repay = 500 | 500 | 0 |
+| W2 (won r2, funded partly by E's deposit) | 4×100 + 100 repay = 500 | 500 | 0 |
+| W3 (won r3) | 400 | 400 | 0 |
+| W4 (won r4) | 400 | 400 | 0 |
+| E (ejected, k = 2) | 100 + 100 deposit | 180 | −20 (penalty → reserve → +5 each to W1–W4) |
+
+- **Invariant I2:** every non-ejected member finishes with net ≥ 0.
+
+### 3.5 Tokens, networks, mainnet safety (from your answer 5)
+- The contracts take the token as an `IERC20` constructor/factory parameter. There's no hard-coded
+  address.
+- **Dev/CI and testnet:** `MockAUSD`, named "Mock AUSD (TEST ONLY)", symbol `mAUSD`, 6 decimals.
+  It has a capped public `faucet()` and is deployed only on testnet/local. Deploy scripts pick the
+  token by chain ID. If Agora provides testnet AUSD, switch to `0xa901…22dC`.
+- **Real user test + demo:** Monad mainnet with real AUSD `0x0000…9012a` and small amounts.
+- **Mainnet guardrails in the factory (owner-configurable):**
+  - `maxContribution` (default 25 AUSD) and `maxMembers` (default 10).
+  - `Pausable`: pausing blocks `createCircle` and new `join`s only.
+    `collect`/`payout`/`markDefault`/`claim` and all withdrawals are **never** pausable.
+  - A visible "Beta" label in the UI.
+- The factory owner is the deployer key. Moving it to a multisig is noted as future work.
+
+### 3.6 Cross-border / Agora (criteria pending)
+AUSD is the only settlement asset. Each member picks a display currency, which is emitted
+on-chain (`MemberProfileSet`) so it survives the stateless test. Envio aggregates
+`CorridorStats` by currency pair. Receipts show "You paid AED 367 ≈ 100 AUSD, settled
+instantly". The corridor and FX layer sit behind one module (`fx.ts` + indexer entities), so it
+can adapt to Agora's criteria when they arrive.
+
+### 3.7 Mercuryo (from your answer 6)
+"Add money" is off the critical path. The widget runs behind a `RampProvider` adapter
+(`mercuryo` | `faucet`). If Mercuryo doesn't support AUSD on Monad, we on-ramp to a Monad
+stablecoin they do support, show a clear note, and list the swap as future work. No swap will be
+built unless it turns out to be trivial.
+
+## 4. File tree
 
 ```
 Turn/
-├── package.json, pnpm-workspace.yaml, .env.example, README.md
-├── contracts/                      @turn/contracts
-│   ├── foundry.toml
+├── package.json, pnpm-workspace.yaml, .env.example, README.md, LICENSE
+├── contracts/                          @turn/contracts
+│   ├── foundry.toml                    (network = "monad"; profiles: default, ci, coverage)
 │   ├── src/
-│   │   ├── CircleFactory.sol
-│   │   ├── Circle.sol
-│   │   ├── CreditRegistry.sol
-│   │   ├── TurnAccount.sol         (EIP-7702 delegate, ERC-7201 storage)
-│   │   ├── TurnKeeper.sol          (CRE IReceiver → permissionless round calls)
-│   │   ├── libraries/TrustMath.sol
+│   │   ├── CircleFactory.sol           clones, registry auth, caps, Pausable
+│   │   ├── Circle.sol                  rounds, auction, collateral, reserve, defaults, ejection
+│   │   ├── CreditRegistry.sol          non-transferable records + score()
+│   │   ├── TurnAccount.sol             EIP-7702 delegate, EIP-712 batches, pull grants, ERC-7201
+│   │   ├── TurnKeeper.sol              CRE IReceiver → permissionless round calls
+│   │   ├── libraries/TrustMath.sol     trustBps(record), requiredCollateral(...)
 │   │   ├── libraries/CircleTypes.sol
-│   │   └── interfaces/ (ICircle, ICircleFactory, ICreditRegistry, ITurnAccount, IReceiver)
+│   │   ├── interfaces/                 ICircle, ICircleFactory, ICreditRegistry, ITurnAccount, IReceiver
+│   │   └── test-tokens/MockAUSD.sol    (testnet/local only)
 │   ├── test/
-│   │   ├── unit/ (one file per contract + TrustMath)
-│   │   ├── fuzz/, invariant/ (CircleInvariant: balance == Σ collateral+deposits+credits+pot)
-│   │   └── scenario/ (the 7 required scenarios)
-│   └── script/ (Deploy.s.sol, SeedDiasporaCircle.s.sol)
-├── relayer/                        @turn/relayer   (Hono on Node 24, viem)
-│   └── src/ (server.ts, policy.ts [allowlist, rate limit, gas caps], submit.ts [type-4], store.ts)
-├── indexer/                        @turn/indexer   (Envio HyperIndex)
+│   │   ├── unit/                       one file per contract + TrustMath
+│   │   ├── fuzz/                       bids, amounts, timings, trust inputs
+│   │   ├── invariant/                  I0 balance, I1 exposure ≤ reserve, I2 net ≥ 0
+│   │   └── scenario/                   the 7 required scenarios + ejection settlement + trusted default via reserve
+│   └── script/                         Deploy.s.sol, SeedDiasporaCircle.s.sol
+├── relayer/                            @turn/relayer   (Hono, Node 24, viem)
+│   └── src/ server.ts, policy.ts, submit.ts, store.ts, feedback.ts
+├── indexer/                            @turn/indexer   (Envio HyperIndex → Envio Cloud)
 │   ├── config.yaml, schema.graphql
 │   └── src/EventHandlers.ts
-├── automation/                     @turn/automation
-│   ├── cre/ (workflow.ts, config.json, project.yaml: cron → read → decide → report; FX; Telegram)
-│   ├── keeper/ (fallback Node keeper)
-│   └── shared/decide.ts  (the one decision function both use)
-├── web/                            @turn/web  (Next.js App Router, Tailwind, wagmi/viem, mera, PWA)
-│   ├── app/ (landing, onboarding, home, create, join/[code], circle/[id], add-money,
-│   │         credit/[address], settings, metrics, api/credit/[address])
-│   ├── lib/ (mera.ts, relayer.ts, envio.ts, fx.ts, sessions.ts)
-│   └── e2e/ (playwright: stateless.spec.ts, onboarding.spec.ts)
-└── docs/ (plan.md, economics.md, submission.md, *-script.md, traction.md, ACCESS.md,
-           architecture.md, logo.png)
+├── automation/                         @turn/automation
+│   ├── shared/decide.ts                one decision function
+│   ├── cre/                            workflow.ts, config.*.json, project.yaml, secrets.yaml (gitignored values)
+│   └── keeper/                         fallback Node keeper
+├── web/                                @turn/web  (Next.js App Router, Tailwind, wagmi/viem, mera, PWA)
+│   ├── app/                            (landing), onboarding, home, create, join/[code], circle/[id],
+│   │                                   add-money, credit/[address], settings, metrics, api/credit/[address]
+│   ├── lib/                            keyring.ts (TurnKeyring), relayer.ts, envio.ts, fx.ts, ramp.ts, sessions.ts
+│   └── e2e/                            stateless.spec.ts, onboarding.spec.ts
+└── docs/                               plan.md, economics.md, submission.md, demo-video-script.md,
+                                        pitch-video-script.md, ad-script.md, traction.md, ACCESS.md,
+                                        architecture.md, logo.png
 ```
 
-## 7. Contract interfaces (sketch)
+## 5. Contract interfaces
 
 ```solidity
-// CircleTypes
+// ---- CircleTypes ----
 enum Mode { FIXED_ORDER, AUCTION }
-enum Status { FORMING, ACTIVE, COMPLETED, CANCELLED }
+enum Status { FORMING, ACTIVE, COMPLETED }
 enum MemberState { NONE, ACTIVE, EJECTED }
-struct Params { uint8 n; uint128 contribution; uint32 period; Mode mode;
-                uint16 maxDiscountBps; uint32 bidWindow; uint32 gracePeriod; uint128 entryDeposit; }
+struct Params {
+  uint8   n;               // 3..maxMembers
+  uint128 contribution;    // C, token units (6 dp); ≤ maxContribution
+  uint32  period;          // seconds
+  Mode    mode;
+  uint16  maxDiscountBps;  // ≤ 5000
+  uint32  bidWindow;       // < period
+  uint32  gracePeriod;     // bidWindow + grace < period
+  uint128 entryDeposit;    // default = C
+  uint16  reserveBps;      // default 2000
+}
 
+// ---- CircleFactory ----
 interface ICircleFactory {
   event CircleCreated(address indexed circle, address indexed creator, Params params, bytes32 inviteHash);
+  event LimitsUpdated(uint128 maxContribution, uint8 maxMembers);
   function createCircle(Params calldata p, address[] calldata fixedOrder, bytes32 inviteHash) external returns (address);
   function isCircle(address) external view returns (bool);
+  function token() external view returns (IERC20);
+  function registry() external view returns (ICreditRegistry);
+  function paused() external view returns (bool);
+  function setLimits(uint128 maxContribution, uint8 maxMembers) external;  // onlyOwner
+  function pause() external; function unpause() external;                  // onlyOwner (create/join only)
 }
 
+// ---- Circle (EIP-1167 clone) ----
 interface ICircle {
-  // lifecycle
-  function join(bytes32 inviteSecret) external;          // pulls entryDeposit
-  function collect() external;                            // permissionless, idempotent, try/catch per member
-  function bid(uint16 discountBps) external;              // AUCTION, eligible members, within window
-  function closeAuction() external;                       // permissionless after bidWindow
-  function payout() external;                             // permissionless once all paid/covered
+  function join(bytes32 inviteSecret, bytes3 displayCurrency) external;    // pulls entryDeposit; starts circle at n
+  function collect() external;                         // permissionless, idempotent; per-member try/catch
+  function bid(uint16 discountBps) external;           // AUCTION, eligible, in window
+  function closeAuction() external;                    // permissionless after window
+  function payout() external;                          // permissionless once all paid/covered
   function markDefault(address member, uint256 round) external; // permissionless after grace
-  function postCollateral(uint256 amount) external;       // optional external collateral
-  function claim() external;                              // after completion: deposits, collateral, credits, refunds
-  // views: currentRound, roundInfo, memberInfo, requiredCollateral(member, round), status
-  // events: Joined, CircleStarted, ContributionPaid(member, round, amount, creditUsed, onTime),
-  //         ContributionLate, BidPlaced, AuctionClosed, PayoutMade(winner, round, gross, discount, withheld),
-  //         CreditAccrued, CollateralReleased, DefaultMarked(member, round, coveredFrom), MemberEjected,
-  //         CircleCompleted, Claimed
+  function postCollateral(uint256 amount) external;
+  function claim() external;                           // after completion: collateral, deposit, credit, refund, reserve share
+  function setDisplayCurrency(bytes3 ccy) external;
+  // views
+  function params() external view returns (Params memory);
+  function status() external view returns (Status);
+  function currentRound() external view returns (uint256 round, uint64 start, bool paidOut);
+  function memberInfo(address) external view returns (MemberView memory);
+  function reserve() external view returns (uint256 balance, uint256 totalExposure);
+  function claimable(address) external view returns (uint256);
+  // events (indexer + UI)
+  event Joined(address indexed member, uint256 deposit, bytes3 displayCurrency);
+  event CircleStarted(uint64 startTime, address[] members);
+  event ContributionPaid(address indexed member, uint256 indexed round, uint256 amount, uint256 creditUsed, bool onTime);
+  event ContributionFailed(address indexed member, uint256 indexed round);
+  event BidPlaced(address indexed member, uint256 indexed round, uint16 discountBps);
+  event AuctionClosed(uint256 indexed round, address winner, uint16 discountBps, bool noBids);
+  event PayoutMade(address indexed winner, uint256 indexed round, uint256 pot, uint256 discount, uint256 toReserve, uint256 collateralWithheld, uint256 trustWaiver, uint256 netPaid);
+  event CreditAccrued(address indexed member, uint256 indexed round, uint256 amount);
+  event CollateralReleased(address indexed member, uint256 amount);
+  event DefaultMarked(address indexed member, uint256 indexed round, uint256 fromDeposit, uint256 fromCollateral, uint256 fromReserve);
+  event MemberEjected(address indexed member, uint256 indexed round, uint256 k, uint256 refund, uint256 penalty);
+  event RepaymentOwed(address indexed winner, uint256 amount);
+  event ReserveChanged(uint256 balance, uint256 totalExposure);
+  event CircleCompleted(uint256 reserveDistributed);
+  event Claimed(address indexed member, uint256 amount);
+  event MemberProfileSet(address indexed member, bytes3 displayCurrency);
 }
 
+// ---- CreditRegistry ----
 interface ICreditRegistry {
   struct Record { uint32 circlesJoined; uint32 circlesCompleted; uint32 paymentsOnTime;
                   uint32 paymentsLate; uint32 defaults; uint128 totalContributed; }
+  event RecordUpdated(address indexed account, Record record);
   function recordOf(address) external view returns (Record memory);
-  function score(address) external view returns (uint256);   // 0..1000
-  // writes: onlyRegisteredCircle (factory-authorised)
+  function score(address) external view returns (uint16);   // 0..1000
+  function onJoined(address) external;                       // onlyCircle
+  function onPayment(address, uint256 amount, bool onTime) external;
+  function onDefault(address) external;
+  function onCompleted(address) external;
 }
 
+// ---- TrustMath (pure library, tunable constants) ----
 library TrustMath {
-  function trustDiscountBps(ICreditRegistry.Record memory r) internal pure returns (uint16); // capped 8000
-  function requiredCollateral(uint256 remainingRounds, uint256 c, uint16 trustBps) internal pure returns (uint256);
+  function trustBps(ICreditRegistry.Record memory r) internal pure returns (uint16); // 0 for new users, cap 8000
+  function score(ICreditRegistry.Record memory r) internal pure returns (uint16);
 }
 
-interface ITurnAccount { // runs as the mera EOA via EIP-7702
-  struct Call { address target; bytes data; }             // value always 0
-  function execute(Call[] calldata calls, uint256 nonce, uint256 deadline, bytes calldata sig) external;
-  function grantPull(address circle, uint128 maxAmount, uint32 period, uint64 validUntil) external; // self-call only
-  function revokePull(address circle) external;           // self-call only (i.e. via signed execute)
-  function pullContribution(uint256 round, uint256 amount) external; // called by Circle; scope-checked
+// ---- TurnAccount (EIP-7702 delegate; ERC-7201 storage "turn.account.v1") ----
+interface ITurnAccount {
+  struct Call { address target; bytes data; }                 // value is always 0
+  struct PullGrant { uint128 maxAmount; uint32 period; uint64 validUntil; uint64 lastPullAt; uint32 lastRound; bool active; }
+  event Executed(uint256 indexed nonce, uint256 calls);
+  event PullGranted(address indexed circle, uint128 maxAmount, uint32 period, uint64 validUntil);
+  event PullRevoked(address indexed circle);
+  event Pulled(address indexed circle, uint256 indexed round, uint256 amount);
+  function execute(Call[] calldata calls, uint256 nonce, uint256 deadline, bytes calldata sig) external; // EIP-712, signer == address(this)
+  function grantPull(address circle, uint128 maxAmount, uint32 period, uint64 validUntil) external;  // self only
+  function revokePull(address circle) external;                                                     // self only
+  function pullContribution(uint256 round, uint256 amount) external;                                // registered circle, in scope
+  function nonce() external view returns (uint256);
+  function grantOf(address circle) external view returns (PullGrant memory);
+}
+
+// ---- TurnKeeper (CRE consumer) ----
+interface ITurnKeeper /* is IReceiver */ {
+  enum Action { COLLECT, CLOSE_AUCTION, PAYOUT, MARK_DEFAULT }
+  function onReport(bytes calldata metadata, bytes calldata report) external; // only forwarder; report = abi.encode(Job[])
 }
 ```
 
-## 8. Session design (summary)
+Invariants tested in Phase 2:
+- **I0:** `token.balanceOf(circle) == Σ unreleased collateral + Σ deposits + Σ credit balances + current-round pot + R + Σ pending refunds`
+  (the reserve and refunds are added to the spec's formula).
+- **I1:** `ΣX_i ≤ R`.
+- **I2:** every non-ejected member finishes with net ≥ 0.
+- **I3:** no member ever receives a pot below their promised amount, except in the ejection case.
+
+## 6. Session design
 
 | Action | Prompt? | Enforced by |
 | --- | --- | --- |
-| Onboard + first join (7702 auth + batch) | 1 Face ID | mera ceremony; relayer type-4 |
-| Monthly contribution | **None** | TurnAccount pull grant (circle, ≤ C, once/round, until end) |
-| Bid ≤ threshold while app open | None (in-memory mera session) | EIP-712 signature, nonce + deadline |
-| Bid > threshold, join new circle, withdraw/claim, change payout destination, revoke/renew grant | Face ID | new mera ceremony per action |
+| Onboard + first join (7702 auth + batch) | 1 Face ID | mera ceremony; relayer type-4 tx |
+| Each contribution (auto-pay) | **None** | TurnAccount `PullGrant` (circle, ≤ C, once per round, until circle end) |
+| Bid ≤ 10% discount while the app is open | None (in-memory mera session) | EIP-712 signature, nonce + deadline |
+| Bid > 10%; join another circle; claim/withdraw; change payout destination; renew or revoke auto-pay | Face ID | fresh mera ceremony |
 | Export recovery phrase | Face ID | Settings only |
-| Grant expiry | Banner: "Auto-pay for *Family Circle* ended. Turn it back on?" and one tap → Face ID | `validUntil` |
+| Auto-pay expiry | Banner: "Auto-pay for *Family Circle* has ended. Turn it back on?" One tap → Face ID | `validUntil` |
+| After reload / new device | The first action that needs a signature asks for Face ID; reading needs none | state from chain + Envio |
 
-Next step after your answers: Phase 2 (contracts + full test suite).
+## 7. Assumptions (proceeding unless you object)
+- A1: pnpm workspaces, Node 24 LTS.
+- A2: The entry deposit and any posted collateral count toward a winner's `K_i`.
+- A3: FIXED_ORDER uses the same pipeline without a bid window, and the winner is `order[r]`.
+- A4: Credit offsets the next contribution first. Any remainder is claimable at completion.
+- A5: The discount credit (80% after the reserve slice) goes to all other active members,
+  including earlier winners.
+- A6: The feedback prompt stores ratings off-chain in the relayer's store. This is disclosed and used only for traction.md.
+- A7: Solidity 0.8.28, OpenZeppelin v5, `evm_version` left at the Foundry default unless Monad docs require otherwise.
+
+## 8. Environment (answer 9)
+- Monad docs recommend **standard Foundry** via `foundryup` (≥ v1.8.0) with `network = "monad"`. No fork needed.
+- WSL currently only has the `docker-desktop` distro. **Ubuntu isn't installed yet.**
+
+## 9. Still pending from you
+1. Agora bounty criteria (the placeholder was not filled in). I'm designing for AUSD settlement in a cross-border flow and keeping it adaptable.
+2. "One Passkey, Many Keys" criteria (the placeholder was not filled in). One account per user behind `TurnKeyring` until then.
+3. Team names and roles (the placeholder was not filled in).
+4. Git identity (the placeholder was not filled in). See the note in the chat about public emails.
+5. Confirm **k counts the deposit-funded round** (§3.4).
+6. Confirm the **deposit rebate** reading of "reduced entryDeposit" (§3.3).
