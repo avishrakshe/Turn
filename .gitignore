@@ -35,8 +35,8 @@ contracts/broadcast/**/dry-run/
 lcov.info
 
 # ---- Envio ----
-services/indexer/generated/
-services/indexer/.envio/
+indexer/generated/
+indexer/.envio/
 
 # ---- OS / editor ----
 .DS_Store

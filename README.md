@@ -10,7 +10,9 @@ bid a discount that is shared with everyone else, and posted collateral covers m
 paying. Members sign in with a passkey and never need a seed phrase or gas, and they can pay in
 with a card through an on-ramp.
 
-Built for **Metropolis — Track 2**.
+Built on **Monad** for the Monad **Metropolis** hackathon — **Track 2: Consumer Products & Payments**.
+Our first users: Indian families and migrant workers in the UAE and the Gulf who already run
+monthly committees with relatives back home.
 
 ## Status
 
@@ -21,6 +23,7 @@ the indexer endpoint, and videos will be listed here once they exist.
 
 | Layer | Technology |
 | --- | --- |
+| Chain | Monad (testnet 10143, mainnet 143) |
 | Smart contracts | Solidity, Foundry |
 | Stablecoin | Agora AUSD |
 | Wallet / onboarding | mera (passkey wallets) |
@@ -34,14 +37,12 @@ the indexer endpoint, and videos will be listed here once they exist.
 
 ```
 Turn/
-├── contracts/            # @turn/contracts   — Foundry project: Circle contracts and tests
-├── apps/
-│   └── web/              # @turn/web         — Next.js PWA
-├── services/
-│   ├── indexer/          # @turn/indexer     — Envio indexer and GraphQL schema
-│   ├── relayer/          # @turn/relayer     — gas-sponsoring transaction relayer
-│   └── automation/       # @turn/automation  — Chainlink CRE workflows
-└── docs/                 # architecture, economics, and sponsor integration notes
+├── contracts/    # @turn/contracts   — Foundry: CircleFactory, Circle, CreditRegistry, TrustMath, TurnAccount
+├── relayer/      # @turn/relayer     — gasless relayer (EIP-7702 type-4 sponsorship, signed batches)
+├── indexer/      # @turn/indexer     — Envio HyperIndex (Envio Cloud)
+├── automation/   # @turn/automation  — Chainlink CRE workflow + fallback keeper
+├── web/          # @turn/web         — Next.js PWA (mera passkeys, mobile-first)
+└── docs/         # economics, submission, scripts, access, architecture
 ```
 
 ## Environment
