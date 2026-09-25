@@ -6,12 +6,12 @@ field_selection:
     - hash
 contracts:
   - name: CircleFactory
-    abi_file_path: ../contracts/abi/CircleFactory.json
+    abi_file_path: ./abis/CircleFactory.json
     events:
       - event: CircleCreated
   - name: Circle
     # Registered dynamically from CircleFactory.CircleCreated
-    abi_file_path: ../contracts/abi/Circle.json
+    abi_file_path: ./abis/Circle.json
     events:
       - event: Joined
       - event: Left
@@ -36,12 +36,12 @@ contracts:
       - event: Claimed
       - event: MemberProfileSet
   - name: CreditRegistry
-    abi_file_path: ../contracts/abi/CreditRegistry.json
+    abi_file_path: ./abis/CreditRegistry.json
     events:
       - event: RecordUpdated
   - name: TurnAccount
     # EIP-7702 accounts: events are emitted *at the member's own address*. Registered when they join a circle.
-    abi_file_path: ../contracts/abi/TurnAccount.json
+    abi_file_path: ./abis/TurnAccount.json
     events:
       - event: PullGranted
       - event: PullRevoked
