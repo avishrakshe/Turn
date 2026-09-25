@@ -45,6 +45,30 @@ Turn/
 └── docs/         # economics, submission, scripts, access, architecture
 ```
 
+## Progress
+
+| Phase | Status |
+| --- | --- |
+| 1. Plan: verified facts, design, interfaces | ✅ [`docs/plan.md`](docs/plan.md) |
+| 2. Contracts + full test suite | ✅ [`contracts/`](contracts/), [`docs/economics.md`](docs/economics.md), [`docs/gas.md`](docs/gas.md) |
+| 3. Relayer, testnet deployment, Envio indexer | ⏳ |
+| 4. Chainlink CRE automation | ⏳ |
+| 5. Web app | ⏳ |
+| 6. Demo, docs, submission | ⏳ |
+
+## Local setup
+
+Developed in WSL2 (Ubuntu) with [Foundry](https://getfoundry.sh) ≥ 1.8, Node 24 and pnpm.
+
+```bash
+git clone --recurse-submodules https://github.com/avishrakshe/Turn.git
+cd Turn/contracts
+forge build
+forge test                  # unit, fuzz, scenario, invariant (≈ 3 s)
+forge test --gas-report
+forge coverage --ir-minimum --no-match-coverage "(test|script)/"
+```
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in the values. `.env` is gitignored, so never commit

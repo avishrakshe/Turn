@@ -397,3 +397,24 @@ Invariants tested in Phase 2:
 1. Agora bounty criteria: expected before Phase 5. Designing for AUSD settlement in a cross-border flow, kept adaptable.
 2. "One Passkey, Many Keys" criteria: expected before Phase 5. One account per user behind `TurnKeyring`.
 3. Team names and roles: use `TEAM_TBD` in docs until the docs phase.
+
+## 10. Phase 2 implementation notes (decisions made while building)
+
+- **FIXED_ORDER = join order.** Passkey accounts only exist once a member onboards, so addresses can't be listed
+  at creation. The agreed order is the order people join.
+- **`entryDeposit ≥ C` is enforced**, so the deposit always covers a full missed payment. Any rebated part is backed by the reserve.
+- **Pull-grant cadence:** rounds must strictly increase, and `pulls ≤ elapsed / period + 1` since the grant.
+  This tolerates keeper timing jitter without allowing bursts.
+- **Collection is grief-resistant:**
+  - Success is measured by the AUSD actually received, never by the member account's return value.
+  - Each member-account call gets a fixed 250k gas budget, and `collect` reverts if the caller supplies too little
+    gas to honour it, so nobody can starve a pull to get an honest member marked late.
+  - A partial transfer becomes the member's credit; an excess becomes withdrawable.
+- **Payout to an address the token refuses** (e.g. a blocklist) becomes withdrawable instead of blocking the circle.
+- **An ejected member** gets their posted collateral and any earned discount credit back immediately, and the 90%
+  refund at completion. The lifecycle fuzzer caught an early version that forgot the collateral.
+- **Ejection when the ejected member was the last one to receive:** that round becomes the settlement slot
+  (`_cancelRound`).
+- **Scoring:** the on-time component ramps up over the first 12 payments, so a single payment isn't "history".
+  Formulas are in `docs/economics.md` §5 and §7.
+- **`nextAction()` view:** tells keepers (CRE workflow and fallback) what's due, so both share one decision rule.

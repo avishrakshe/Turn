@@ -1,66 +1,26 @@
-## Foundry
+# @turn/contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Solidity contracts for Turn savings circles on Monad (Foundry).
 
-Foundry consists of:
+| Contract | Role |
+| --- | --- |
+| `CircleFactory` | Deploys circles as EIP-1167 clones, registers them with the CreditRegistry, mainnet-beta limits + pause (new circles/joins only) |
+| `Circle` | One savings circle: joins, collection, discount auction, payouts, collateral, protection reserve, defaults, ejection, settlement |
+| `CreditRegistry` | Non-transferable savings history per wallet; `score()` and `trustBps()` |
+| `TrustMath` | Pure scoring/trust rules (tunable constants) |
+| `TurnAccount` | EIP-7702 delegate for mera passkey EOAs: EIP-712 relayed batches + onchain auto-pay grants |
+| `TurnKeeper` | Chainlink CRE consumer (`onReport`) that runs due round actions |
+| `MockAUSD` | **Test only** 6-decimal stand-in for AUSD (local + testnet) |
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+The economics and the invariants (I0 accounting, I1 exposure ≤ reserve, I2 no member worse off, I3 pot size)
+are described in `../docs/plan.md` and `../docs/economics.md`.
 
-## Documentation
+## Commands
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```bash
+forge build
+forge test                      # unit, fuzz, scenario, invariant
+forge test --gas-report
+forge coverage --ir-minimum --no-match-coverage "(test|script)/"
+FOUNDRY_PROFILE=ci forge test   # more fuzz/invariant runs
 ```
