@@ -180,11 +180,21 @@ abstract contract TurnTestBase is Test {
     // Credit history
     // ---------------------------------------------------------------------------------------------
 
-    function giveHistory(address who, uint256 completed, uint256 onTime, uint256 late, uint256 defaults) internal {
-        for (uint256 i; i < completed; ++i) registry.onCompleted(who);
-        for (uint256 i; i < onTime; ++i) registry.onPayment(who, C, true);
-        for (uint256 i; i < late; ++i) registry.onPayment(who, C, false);
-        for (uint256 i; i < defaults; ++i) registry.onDefault(who);
+    function giveHistory(address who, uint256 completed, uint256 onTime, uint256 late, uint256 defaults)
+        internal
+    {
+        for (uint256 i; i < completed; ++i) {
+            registry.onCompleted(who);
+        }
+        for (uint256 i; i < onTime; ++i) {
+            registry.onPayment(who, C, true);
+        }
+        for (uint256 i; i < late; ++i) {
+            registry.onPayment(who, C, false);
+        }
+        for (uint256 i; i < defaults; ++i) {
+            registry.onDefault(who);
+        }
     }
 
     // ---------------------------------------------------------------------------------------------

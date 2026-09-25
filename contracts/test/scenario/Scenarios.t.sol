@@ -25,7 +25,9 @@ contract ScenariosTest is TurnTestBase {
 
     function _assertConservation(uint256 n) internal view {
         int256 total;
-        for (uint256 i; i < n; ++i) total += _netOf(m[i]);
+        for (uint256 i; i < n; ++i) {
+            total += _netOf(m[i]);
+        }
         assertEq(total, 0, "tokens created or lost");
     }
 
@@ -143,7 +145,9 @@ contract ScenariosTest is TurnTestBase {
         assertEq(uint8(c.status()), uint8(CircleTypes.Status.COMPLETED));
         claimAll(c);
         _assertConservation(5);
-        for (uint256 i = 1; i < 5; ++i) assertGe(_netOf(m[i]), 0);
+        for (uint256 i = 1; i < 5; ++i) {
+            assertGe(_netOf(m[i]), 0);
+        }
         assertEq(registry.recordOf(m[0]).defaults, 1);
     }
 
@@ -202,7 +206,9 @@ contract ScenariosTest is TurnTestBase {
         assertEq(token.balanceOf(address(c)), 0);
         _assertConservation(5);
         assertEq(_netOf(e), -20e6, "ejected member loses the 10% penalty");
-        for (uint256 i; i < 4; ++i) assertEq(_netOf(m[i]), 5e6, "penalty shared by the others");
+        for (uint256 i; i < 4; ++i) {
+            assertEq(_netOf(m[i]), 5e6, "penalty shared by the others");
+        }
     }
 
     // -------------------------------------------------------------------------------------------
@@ -325,7 +331,8 @@ contract ScenariosTest is TurnTestBase {
         ITurnAccount.Call[] memory calls = new ITurnAccount.Call[](3);
         calls[0] = call_(address(token), abi.encodeCall(token.approve, (predicted, C)));
         calls[1] = call_(
-            address(factory), abi.encodeCall(factory.createCircle, (p, keccak256(abi.encodePacked(SECRET)), INR))
+            address(factory),
+            abi.encodeCall(factory.createCircle, (p, keccak256(abi.encodePacked(SECRET)), INR))
         );
         calls[2] = call_(m[0], abi.encodeCall(TurnAccount.grantPull, (predicted, C, PERIOD, validUntil)));
         relay(0, calls);

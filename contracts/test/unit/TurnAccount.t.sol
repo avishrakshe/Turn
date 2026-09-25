@@ -19,7 +19,11 @@ contract TurnAccountTest is TurnTestBase {
         acct = TurnAccount(payable(m[1]));
     }
 
-    function _one(address target, bytes memory data) internal pure returns (ITurnAccount.Call[] memory calls) {
+    function _one(address target, bytes memory data)
+        internal
+        pure
+        returns (ITurnAccount.Call[] memory calls)
+    {
         calls = new ITurnAccount.Call[](1);
         calls[0] = ITurnAccount.Call({target: target, data: data});
     }
@@ -194,6 +198,8 @@ contract TurnAccountTest is TurnTestBase {
         bytes memory sig = signBatch(1, calls, 0, deadline);
         vm.expectRevert(ITurnAccount.BadSignature.selector);
         TurnAccount(payable(m[2])).execute(calls, 0, deadline, sig);
-        assertTrue(acct.hashCalls(calls, 0, deadline) != TurnAccount(payable(m[2])).hashCalls(calls, 0, deadline));
+        assertTrue(
+            acct.hashCalls(calls, 0, deadline) != TurnAccount(payable(m[2])).hashCalls(calls, 0, deadline)
+        );
     }
 }

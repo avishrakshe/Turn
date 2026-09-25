@@ -57,9 +57,13 @@ contract TurnKeeperTest is TurnTestBase {
         warpPastGrace(c);
 
         TurnKeeper.Job[] memory jobs = new TurnKeeper.Job[](3);
-        jobs[0] = TurnKeeper.Job({circle: makeAddr("fake"), action: TurnKeeper.Action.PAYOUT, member: address(0), round: 0});
+        jobs[0] = TurnKeeper.Job({
+            circle: makeAddr("fake"), action: TurnKeeper.Action.PAYOUT, member: address(0), round: 0
+        });
         jobs[1] = _job(c, TurnKeeper.Action.PAYOUT); // fails: unresolved
-        jobs[2] = TurnKeeper.Job({circle: address(c), action: TurnKeeper.Action.MARK_DEFAULT, member: m[2], round: 1});
+        jobs[2] = TurnKeeper.Job({
+            circle: address(c), action: TurnKeeper.Action.MARK_DEFAULT, member: m[2], round: 1
+        });
 
         vm.expectEmit(true, false, false, true, address(keeper));
         emit TurnKeeper.JobExecuted(makeAddr("fake"), TurnKeeper.Action.PAYOUT, false, "not a circle");

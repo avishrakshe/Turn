@@ -15,6 +15,7 @@ remappings = [
   "forge-std/=lib/forge-std/src/",
 ]
 fs_permissions = [{ access = "read", path = "./deployments" }]
+gas_limit = "18446744073709551615"  # tests only: the lifecycle meta-test runs 60 full circles in one test
 
 [profile.default.fuzz]
 runs = 512
