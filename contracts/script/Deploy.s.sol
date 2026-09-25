@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
+import {VmSafe} from "forge-std/Vm.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Circle} from "../src/Circle.sol";
@@ -58,11 +59,11 @@ contract Deploy is Script {
 
         address token = vm.envOr("AUSD_ADDRESS", address(0));
         if (mainnet && token != AUSD_MAINNET) revert WrongMainnetToken(token);
-        uint128 maxContribution = uint128(vm.envOr("MAX_CONTRIBUTION", mainnet ? uint256(25e6) : uint256(1_000e6)));
+        uint128 maxContribution =
+            uint128(vm.envOr("MAX_CONTRIBUTION", mainnet ? uint256(25e6) : uint256(1_000e6)));
         uint8 maxMembers = uint8(vm.envOr("MAX_MEMBERS", mainnet ? uint256(10) : uint256(20)));
-        d.forwarder = vm.envOr(
-            "CRE_FORWARDER", mainnet ? CRE_SIM_FORWARDER_MAINNET : CRE_SIM_FORWARDER_TESTNET
-        );
+        d.forwarder =
+            vm.envOr("CRE_FORWARDER", mainnet ? CRE_SIM_FORWARDER_MAINNET : CRE_SIM_FORWARDER_TESTNET);
         d.startBlock = block.number;
 
         vm.startBroadcast(pk);
@@ -85,6 +86,11 @@ contract Deploy is Script {
     }
 
     function _write(Deployment memory d) internal {
+        // A dry run (no --broadcast) must not leave simulated addresses behind for the relayer/indexer to pick up.
+        if (vm.isContext(VmSafe.ForgeContext.ScriptDryRun)) {
+            console.log("dry run: deployments file not written");
+            return;
+        }
         string memory k = "deployment";
         vm.serializeUint(k, "chainId", block.chainid);
         vm.serializeUint(k, "startBlock", d.startBlock);
@@ -97,7 +103,8 @@ contract Deploy is Script {
         vm.serializeAddress(k, "keeper", d.keeper);
         vm.serializeAddress(k, "creForwarder", d.forwarder);
         string memory json = vm.serializeAddress(k, "owner", d.owner);
-        string memory path = string.concat(vm.projectRoot(), "/deployments/", vm.toString(block.chainid), ".json");
+        string memory path =
+            string.concat(vm.projectRoot(), "/deployments/", vm.toString(block.chainid), ".json");
         vm.writeJson(json, path);
         console.log("deployment written to", path);
     }
