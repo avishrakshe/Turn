@@ -46,3 +46,6 @@ Thumbs.db
 !.vscode/extensions.json
 *.swp
 *.log
+
+# ---- Local stack (scripts/local-up.sh) ----
+.local/
