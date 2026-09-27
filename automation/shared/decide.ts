@@ -58,6 +58,22 @@ export function planJobs(snapshots: CircleSnapshot[], maxJobs: number): { jobs: 
   return { jobs, planned };
 }
 
+/**
+ * Gas limit for a report. Monad bills the whole limit, so size it from the jobs instead of a flat maximum.
+ * Figures are measured on Monad testnet (docs/gas.md) with headroom: collect ~150k + ~220k per member via pull
+ * grants, payout ~400k, markDefault up to ~600k (ejection), closeAuction ~150k, plus forwarder/TurnKeeper overhead.
+ */
+export function reportGasLimit(planned: CircleSnapshot[], ceiling: bigint): bigint {
+  let gas = 250_000n;
+  for (const s of planned) {
+    if (s.nextAction === NextAction.COLLECT) gas += 150_000n + 220_000n * BigInt(Math.max(1, s.members.length));
+    else if (s.nextAction === NextAction.PAYOUT) gas += 400_000n;
+    else if (s.nextAction === NextAction.MARK_DEFAULT) gas += 600_000n;
+    else if (s.nextAction === NextAction.CLOSE_AUCTION) gas += 150_000n;
+  }
+  return gas < ceiling ? gas : ceiling;
+}
+
 /** The report TurnKeeper.onReport decodes: abi.encode(Job[]). */
 export function encodeJobs(jobs: Job[]): Hex {
   return encodeAbiParameters(

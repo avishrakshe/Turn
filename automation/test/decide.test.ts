@@ -12,6 +12,7 @@ import {
   NextAction,
   parseRates,
   planJobs,
+  reportGasLimit,
   type CircleSnapshot,
 } from "../shared/decide.ts";
 
@@ -51,6 +52,12 @@ describe("decision rule", () => {
     const { jobs, planned } = planJobs(s, 2);
     expect(jobs.map((j) => j.action)).toEqual([KeeperAction.COLLECT, KeeperAction.PAYOUT]);
     expect(planned).toHaveLength(2);
+  });
+
+  it("sizes the report gas limit from the jobs (Monad bills the limit)", () => {
+    expect(reportGasLimit([snap(NextAction.CLOSE_AUCTION)], 6_000_000n)).toBe(400_000n);
+    expect(reportGasLimit([snap(NextAction.COLLECT)], 6_000_000n)).toBe(250_000n + 150_000n + 3n * 220_000n);
+    expect(reportGasLimit(Array(20).fill(snap(NextAction.MARK_DEFAULT)), 6_000_000n)).toBe(6_000_000n);
   });
 
   it("encodes the report exactly as TurnKeeper decodes it: abi.encode(Job[])", () => {

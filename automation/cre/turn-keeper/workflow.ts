@@ -37,6 +37,7 @@ import {
   parseRates,
   planJobs,
   type Rates,
+  reportGasLimit,
 } from "../../shared/decide";
 
 export const configSchema = z.object({
@@ -159,17 +160,35 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
 
   // 3. Act: one consensus-signed report, executed by TurnKeeper through the Chainlink forwarder.
   const report = runtime.report(prepareReportRequest(encodeJobs(jobs))).result();
+  // Monad bills the gas limit, so size it from the planned jobs (config value is only the ceiling).
+  const gasLimit = reportGasLimit(planned, BigInt(cfg.gasLimit)).toString();
   const write = evm
-    .writeReport(runtime, { receiver: cfg.keeper, report, gasConfig: { gasLimit: cfg.gasLimit } })
+    .writeReport(runtime, { receiver: cfg.keeper, report, gasConfig: { gasLimit } })
     .result();
   if (write.txStatus !== TxStatus.SUCCESS) {
     throw new Error(`keeper report failed: ${write.errorMessage || write.txStatus}`);
   }
   const txHash = bytesToHex(write.txHash ?? new Uint8Array(32));
-  runtime.log(`TurnKeeper report executed ${jobs.length} job(s): ${txHash}`);
+  runtime.log(`TurnKeeper report executed ${jobs.length} job(s) with gas limit ${gasLimit}: ${txHash}`);
 
   // 4. Tell people, in their own currency. Notifications never block the round actions above.
-  if (cfg.telegramChatId === "") return `executed ${jobs.length} job(s): ${txHash}`;
+  //    FX rates come from an external API, aggregated by median across nodes.
+  const http = new cre.capabilities.HTTPClient();
+  // Field aggregators are passed as functions (as in Chainlink's templates), not called.
+  const fields = Object.fromEntries(cfg.currencies.filter((c) => c !== "USD").map((c) => [c, median]));
+  let rates: Rates = {};
+  try {
+    rates = http
+      .sendRequest(runtime, fetchRates, ConsensusAggregationByFields<Rates>(fields as never))(cfg)
+      .result();
+    runtime.log(`FX (median across nodes, per USD): ${JSON.stringify(rates)}`);
+  } catch (e) {
+    runtime.log(`FX unavailable, amounts shown in USD: ${String(e)}`);
+  }
+  const texts = planned.map((s) => messageFor(s, rates)).filter((t): t is string => t !== null);
+  for (const t of texts) runtime.log(`message: ${t}`);
+
+  if (cfg.telegramChatId === "") return `executed ${jobs.length} job(s): ${txHash}; notifications off`;
   let token: string;
   try {
     token = runtime.getSecret({ id: "TELEGRAM_BOT_TOKEN" }).result().value;
@@ -177,27 +196,15 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
     runtime.log("TELEGRAM_BOT_TOKEN not set; skipping notifications");
     return `executed ${jobs.length} job(s): ${txHash}`;
   }
-  const http = new cre.capabilities.HTTPClient();
-  const fields = Object.fromEntries(cfg.currencies.filter((c) => c !== "USD").map((c) => [c, median<number>()]));
-  let rates: Rates = {};
-  try {
-    rates = http
-      .sendRequest(runtime, fetchRates, ConsensusAggregationByFields<Rates>(fields as never))(cfg)
-      .result();
-  } catch (e) {
-    runtime.log(`FX unavailable, amounts shown in USD: ${String(e)}`);
-  }
   let sent = 0;
-  for (const s of planned) {
-    const text = messageFor(s, rates);
-    if (!text) continue;
+  for (const text of texts) {
     const status = http
       .sendRequest(runtime, sendTelegram, consensusIdenticalAggregation<number>())(token, cfg.telegramChatId, text)
       .result();
-    runtime.log(`telegram ${status}: ${text}`);
+    runtime.log(`telegram ${status}`);
     if (status >= 200 && status < 300) sent++;
   }
-  return `executed ${jobs.length} job(s): ${txHash}; ${sent} notification(s)`;
+  return `executed ${jobs.length} job(s): ${txHash}; ${sent} notification(s) sent`;
 };
 
 export function initWorkflow(config: Config) {
