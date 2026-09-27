@@ -1,0 +1,93 @@
+<PlainWords>
+
+Everything that happens in a circle is recorded on the blockchain as a series of small public notes: who paid, who received the pot, who missed.
+
+Turn uses an indexer to read those notes and organise them, so the app can quickly show your history, your circle's health, and the numbers on our homepage.
+
+The indexer only reads public data. It can be rebuilt from the blockchain at any time, so it's a convenience, not a source of truth.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Envio HyperIndex
+
+The indexer uses [Envio HyperIndex](https://envio.dev) and runs on Envio Cloud. HyperSync supports Monad mainnet (`https://monad.hypersync.xyz`) and testnet. Handlers live in `indexer/src/EventHandlers.ts`. Every entity is derived from contract events alone, so a full re-sync from genesis reproduces it exactly.
+
+Monad full nodes don't serve arbitrary historic state, which is one more reason history comes from events rather than from state reads.
+
+## Entities
+
+| Entity | One per | Key fields |
+| --- | --- | --- |
+| `Circle` | circle | `params`, `status`, `currentRound`, `members`, `reserve`, `totalExposure`, `health` |
+| `Member` | circle × account | `displayCurrency`, `wonRound`, `collateral`, `credit`, `deposit`, `state`, `misses` |
+| `Round` | circle × round | `pot`, `winner`, `discountBps`, `startedAt`, `paidOutAt`, `payoutSeconds` |
+| `Payment` | contribution | `member`, `round`, `amount`, `creditUsed`, `onTime` |
+| `Payout` | payout | `winner`, `pot`, `discount`, `toReserve`, `collateralWithheld`, `trustWaiver`, `netPaid` |
+| `Default` | covered miss | `member`, `round`, `fromDeposit`, `fromCollateral`, `fromReserve` |
+| `CreditRecord` | account | the `CreditRegistry` record plus the computed `score` |
+| `CorridorStats` | currency pair | `volume`, `payments`, `members` (for example AED→INR) |
+| `GlobalStats` | the singleton `"global"` | `circlesActive`, `totalContributed`, `paymentsOnTime`, `paymentsTotal`, `payoutSecondsSum`, `payoutCount` |
+
+**Circle health** is computed in the handler: *green* when everyone is paid for the current round, *amber* while someone is late within grace, *red* when a default was covered by the reserve or a member was ejected.
+
+**Payout time** is measured from the moment the round became payable (all members paid or covered) to `PayoutMade`. It's what the homepage's "average payout time" shows.
+
+## Example queries
+
+The GraphQL endpoint is the Hasura API Envio provides, set as `NEXT_PUBLIC_INDEXER_GRAPHQL_URL` in the web app.
+
+```graphql title="A member's circles"
+query MyCircles($account: String!) {
+  Member(where: { account: { _eq: $account } }) {
+    circle { id status currentRound health params }
+    wonRound
+    credit
+    collateral
+    displayCurrency
+  }
+}
+```
+
+```graphql title="A circle's timeline"
+query Timeline($circle: String!) {
+  Round(where: { circle_id: { _eq: $circle } }, order_by: { round: asc }) {
+    round
+    pot
+    winner
+    discountBps
+    paidOutAt
+  }
+  Default(where: { circle_id: { _eq: $circle } }) {
+    member
+    round
+    fromDeposit
+    fromCollateral
+    fromReserve
+  }
+}
+```
+
+```graphql title="Homepage stats"
+query TurnGlobalStats {
+  GlobalStats(where: { id: { _eq: "global" } }) {
+    circlesActive
+    totalContributed
+    paymentsOnTime
+    paymentsTotal
+    payoutSecondsSum
+    payoutCount
+  }
+}
+```
+
+## Public credit endpoint
+
+`GET /api/credit/:address` returns a member's Turn Score record as JSON. See [Turn Score](/docs/turn-score#rest). It's cached for a minute and needs no key.
+
+<Callout tone="honest">
+
+The indexer is part of the build plan and isn't deployed yet. Until it is, the homepage stats section says so instead of showing numbers.
+
+</Callout>

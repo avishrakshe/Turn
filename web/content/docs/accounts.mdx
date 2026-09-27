@@ -1,0 +1,88 @@
+<PlainWords>
+
+Your Turn account is unlocked with your face or fingerprint, the same way you unlock your phone. There's no password and no list of secret words to keep safe.
+
+You never pay network fees: Turn's relayer sends your requests for you. The relayer can only pass on what you signed, so it can never take your money.
+
+Auto-pay is allowed to do exactly one thing: pay this month's amount into your circle, once, until the circle ends. Anything else, like joining a new circle, bidding big, or withdrawing, asks for Face ID again.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Passkey-derived accounts (mera)
+
+Accounts are created with [mera](https://mera.category.xyz), which turns a WebAuthn passkey into an ordinary Ethereum key:
+
+1. The passkey's **PRF extension** produces a secret that is unique to the credential and the site (`PRF(credential, rpId, salt)`).
+2. That secret becomes a **BIP-39 seed**, and an HD derivation gives a secp256k1 key.
+3. The same passkey gives **the same account on every device** where the passkey is available (for example, synced through iCloud Keychain or Google Password Manager).
+
+Turn derives one account per user, the primary account at HD index 0, behind a small `TurnKeyring` interface (`derive("primary")`). Adding a separate savings or recovery key later means mapping a new purpose to a new index, not a rewrite.
+
+Creating an account takes **one prompt** (two on authenticators that don't support PRF at creation).
+
+## EIP-7702 delegation to TurnAccount
+
+The derived key is a plain externally owned account (EOA). On first use it signs an **EIP-7702 authorization** that delegates its code to `TurnAccount`, so the same address gains smart-account features:
+
+- `execute(calls, nonce, deadline, sig)`: runs a batch of calls signed with EIP-712 by the account's own key. `value` is always 0.
+- `grantPull` / `revokePull` / `pullContribution`: the contract-enforced auto-pay described below.
+- Storage uses an ERC-7201 namespace (`turn.account.v1`), so it never collides with a future delegate.
+
+<Callout title="Monad specifics we rely on">
+
+On Monad, a delegated EOA's transaction reverts if it would take the account's MON balance below 10 MON. Turn users hold 0 MON and `TurnAccount` rejects any `value > 0`, so the balance never drops and the rule never triggers. `TurnAccount` also never uses `CREATE`, which reverts in a delegated context. Circles are created by the factory instead.
+
+</Callout>
+
+## The gasless relayer
+
+The relayer submits transactions and pays gas. For the first action it sends a type-4 (EIP-7702) transaction that carries the authorization.
+
+**What it can do:** refuse or delay your request, which is censorship.
+
+**What it can't do:** change or invent a request. Every batch carries your EIP-712 signature over the calls, a nonce, a deadline and the chain ID, and `TurnAccount` checks it.
+
+Guard rails on the relayer:
+
+- Gas: `eth_estimateGas` plus 10%, a hard cap per call type, and a daily cap per account. Monad bills on the gas **limit**, so limits are kept tight.
+- Rate limits per IP and per account.
+- A target allowlist, checked both by the relayer and by `TurnAccount`: AUSD, the factory, factory-registered circles, and the account itself.
+
+If the relayer ever censors you, every round function stays callable by anyone (see [Automation](/docs/automation)), and a member with MON can submit their own signed batch directly.
+
+## Signing sessions: what needs Face ID
+
+mera keeps signing keys **in memory only**. A session ends when the page closes, and `end()` zeroes the key. So nothing that must happen monthly can depend on a session. Auto-pay is enforced on-chain instead.
+
+| Action | Face ID? | Enforced by |
+| --- | --- | --- |
+| Create account and join first circle | **One prompt** | One mera ceremony signs the 7702 authorization and the batch `approve → join → grantPull` |
+| Monthly contribution (auto-pay) | **None** | `PullGrant` in `TurnAccount` |
+| Bid of 10% or less while the app is open | None | In-memory session, EIP-712 signature |
+| Bid over 10%, join another circle, claim or withdraw, change payout destination, renew or revoke auto-pay | **Yes** | Fresh mera ceremony |
+| Export recovery phrase | **Yes** | Settings only |
+| After reload or on a new device | The first signing action asks | Reading needs no prompt |
+
+### Exactly what auto-pay may do
+
+`grantPull(circle, maxAmount, period, validUntil)` lets a circle pull a contribution without a signature, only when **all** of these hold:
+
+- the caller is a circle registered by the factory
+- `amount ≤ maxAmount` (the contribution C)
+- at most one pull per round, at least `period − tolerance` apart
+- `block.timestamp ≤ validUntil` (the circle's original end)
+- the grant hasn't been revoked
+
+Members who aren't delegated (for example, someone testing with MetaMask) fall back to a normal AUSD allowance and `transferFrom`.
+
+## The stateless-device guarantee
+
+Turn stores **nothing essential on your device**. Circles, payments, your display currency (`MemberProfileSet`), bids and scores all live on-chain and in the indexer. Clear your browser, or pick up a new phone, sign in with the same passkey, and everything comes back. The end-to-end test suite checks exactly this: clear storage, reload, restore.
+
+<Callout tone="honest">
+
+Signing in on a fresh device without a stored credential ID is still being verified with mera. Recovery-phrase export has no dedicated mera API, so Turn derives the phrase itself with `entropyToMnemonic`, behind a fresh Face ID prompt.
+
+</Callout>

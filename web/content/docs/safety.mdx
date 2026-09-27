@@ -1,0 +1,138 @@
+<PlainWords>
+
+The old fear with committees is simple: someone takes the pot early and stops paying. Turn makes that impossible to profit from.
+
+Whoever takes the pot early leaves part of it behind as a safety deposit, enough to cover what they still owe. It comes back to them bit by bit as they keep paying. If they stop, their own deposit pays in for them.
+
+Before your turn, the small deposit you paid when joining covers a first missed month. Miss twice before your turn and you leave the circle, with 90% of what you paid returned at the end.
+
+Behind all of this sits a reserve, filled from bid discounts. It only ever promises what it actually holds.
+
+</PlainWords>
+
+<UnderTheHood />
+
+<Mermaid
+  title="Who covers a missed payment"
+  chart={`
+flowchart TD
+  M["A member misses a payment"] --> Q{"Have they had<br/>their turn yet?"}
+  Q -- "No" --> F{"First miss?"}
+  F -- "Yes" --> D["Their entry deposit<br/>pays it"]
+  F -- "No" --> E["They're ejected:<br/>90% refunded at the end"]
+  Q -- "Yes" --> K["The collateral held back<br/>from their payout pays"]
+  K -- "if it runs out" --> R["The protection reserve<br/>pays the waived part"]
+  D --> P["The pot stays full"]
+  E --> P2["The pot shrinks by one share,<br/>and the circle runs one round fewer"]
+  K --> P
+  R --> P
+`}
+/>
+
+## Withheld collateral
+
+When member *i* wins a round, they still owe every remaining contribution. Call that debt **Dᵢ**:
+
+`Dᵢ = (rounds left after this one) × C + any repayment owed`
+
+The payout withholds enough to cover it. The member's entry deposit counts toward it.
+
+```text
+fullReq        = Dᵢ
+desiredWaiver  = fullReq × trustBps / 10 000        (see Turn Score)
+grantedWaiver  = min(desiredWaiver, R − ΣX − ΣY)    (only what the reserve can back)
+Kᵢ             = fullReq − grantedWaiver             (collateral held)
+withheld       = Kᵢ − entryDepositᵢ − externalCollateralᵢ   (floored at 0)
+netPaid        = pot − discount − withheld
+```
+
+### Pro-rata release
+
+After each on-time contribution, `Dᵢ −= C` and the collateral shrinks in proportion. The difference is paid back to the member:
+
+`Kᵢ ← ⌈Kᵢ × (Dᵢ − C) / Dᵢ⌉`
+
+The division rounds **up**, so rounding can never leave debt uncovered. When Dᵢ reaches 0, everything held is back with the member.
+
+## Entry deposits
+
+Every member pays `entryDeposit` (default C) when joining. Before their turn it covers their **first** missed contribution. A second miss before winning means [ejection](#ejection). At their turn, whatever is left counts toward their collateral. Any excess comes back at completion.
+
+## Protection reserve
+
+Each circle has a reserve **R**, funded by:
+
+- `reserveBps` of every auction discount (default 20%), plus rounding dust from the credit split
+- ejection penalties
+
+It backs two kinds of risk:
+
+- **X**, waived collateral: for winner *i*, `Xᵢ = Dᵢ − Kᵢ`, the debt not covered by collateral
+- **Y**, rebated deposits: part of a trusted member's entry deposit refunded early
+
+### The invariant: exposure ≤ reserve
+
+**I1: ΣXᵢ + ΣYⱼ ≤ R, at all times.**
+
+Every "available" check uses `R − ΣX − ΣY`, so the reserve never promises more than it holds. The invariant survives every operation:
+
+- **Waiving at payout.** `grantedWaiver ≤ R − ΣX − ΣY` by construction.
+- **Release.** Kᵢ and Xᵢ both shrink, and rounding up only makes Xᵢ smaller.
+- **A default by winner *i*.** Cover `c = min(Kᵢ, C)` from collateral and `y = C − c` from the reserve, then `Dᵢ −= C`. Xᵢ falls by exactly y and R falls by exactly y, so I1 still holds. Because `y ≤ Xᵢ ≤ R`, the reserve can **always** pay.
+
+So other members never receive less than promised.
+
+### Deposit rebates for trusted members
+
+A new circle's reserve is empty, so trusted members pay the full entry deposit at first. Later, whenever `R − ΣX` allows, up to `entryDeposit × trustBps` is refunded. The refund is **Yⱼ** and draws on the same budget as waived collateral. If that member then misses before winning, the remaining deposit pays first and the reserve covers the rebated part.
+
+<Callout tone="honest">
+
+In fixed-order circles there are no bid discounts, so the reserve only grows from penalties, and trust rarely waives any collateral there. Trust still decides tie-breaks.
+
+</Callout>
+
+## Ejection
+
+A non-winner's first miss is covered by their entry deposit. On a **second** miss (`markDefault` after grace), they're ejected:
+
+- **k** is the number of rounds they funded, **including the round funded by their consumed deposit**. Otherwise that round's winner would keep a windfall of C.
+- Each winner of those k rounds owes **+C** as a repayment. The circle now runs **n − 1** rounds, which removes one future contribution (−C). So each affected winner's total obligation, and their collateral, stay the same.
+- Repayments are collected in a **settlement slot** at the time round n would have run. Each affected winner still makes exactly n pulls, each ≤ C, so the existing auto-pay grant covers it without a new prompt. A missed settlement pull is handled like any winner default: collateral first, then the reserve.
+- The ejected member receives **0.9 × k × C** at completion. The other **0.1 × k × C** goes to the reserve and is shared among the members who never missed.
+- The round of the second miss is already an ejection round: its pot is `(n − 1) × C`, and so is every later pot. That's the only case where a winner receives less than `n × C`, and those winners also make one fewer contribution, so their net is unchanged.
+
+### Worked example
+
+n = 5, C = 100 AUSD, no discounts. E misses rounds 2 and 3, so round 3 is the first round after the ejection.
+
+| Member | Paid in | Received | Net before the reserve split |
+| --- | --- | --- | --- |
+| W1 (won round 1) | 4 × 100 + 100 repayment = 500 | 500 | 0 |
+| W2 (won round 2, funded partly by E's deposit) | 4 × 100 + 100 repayment = 500 | 500 | 0 |
+| W3 (won round 3, the ejection round: pot 4 × 100) | 400 | 400 | 0 |
+| W4 (won round 4: pot 4 × 100) | 400 | 400 | 0 |
+| E (ejected, k = 2) | 100 + 100 deposit | 180 | −20 |
+
+E's 20 penalty goes to the reserve and is shared at completion: **+5 each** to W1–W4. The "paid in" column leaves out the winners' own deposits, which all come back.
+
+<Callout title="This example is a test">
+
+This exact scenario runs in `web/lib/economics/engine.test.ts` against the TypeScript port of the circle rules, and the shared vectors in `vectors.json` will run against the Solidity contracts. Both must produce these numbers to the unit.
+
+</Callout>
+
+### Completion
+
+Leftover R is split equally among members with **zero** defaults. Ejected members are excluded. If every remaining member missed at least once, it's split among all of them instead, so no money is left stuck in the contract.
+
+## The invariants
+
+| | Invariant |
+| --- | --- |
+| **I0** | Token balance = Σ collateral + Σ deposits + Σ credit + current pot + R + Σ pending refunds |
+| **I1** | ΣX + ΣY ≤ R |
+| **I2** | Every non-ejected member who never missed finishes with net ≥ −(the discount they chose to bid) |
+| **I3** | Every pot = activeMembers × C |
+
+How they're tested is on [Security](/docs/security#invariants-and-testing).

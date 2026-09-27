@@ -1,0 +1,114 @@
+<PlainWords>
+
+Every time you pay your circle on time, it's written down, publicly and permanently. Finishing a circle counts too. Together these make your Turn Score, from 0 to 1000.
+
+A good score has real benefits. When you take the pot early, you can be asked to hold back less of it, as long as the circle's reserve can cover the difference. If nobody bids, a higher score also breaks ties.
+
+Your score isn't locked inside Turn. Any app can read it, and you can share a card that anyone can check.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## What's recorded
+
+`CreditRegistry` keeps one non-transferable record per account. Only factory-registered circles can write to it.
+
+```solidity title="ICreditRegistry"
+struct Record {
+  uint32  circlesJoined;
+  uint32  circlesCompleted;
+  uint32  paymentsOnTime;
+  uint32  paymentsLate;
+  uint32  defaults;
+  uint128 totalContributed; // AUSD base units
+}
+
+event RecordUpdated(address indexed account, Record record);
+
+function recordOf(address) external view returns (Record memory);
+function score(address) external view returns (uint16); // 0..1000
+```
+
+Circles call `onJoined`, `onPayment(amount, onTime)`, `onDefault` and `onCompleted` as things happen.
+
+## How the score is computed
+
+`TrustMath` is a pure library with integer-only arithmetic and floor division:
+
+```text
+payments    = paymentsOnTime + paymentsLate + defaults
+if payments == 0: score = 0
+
+reliability = ⌊paymentsOnTime × 400 / payments⌋      up to 400
+experience  = min(circlesCompleted, 4) × 150          up to 600
+score       = clamp(reliability + experience − 200 × defaults, 0, 1000)
+
+trustBps    = circlesCompleted == 0 ? 0 : min(8000, score × 8)
+```
+
+| Record | Score | trustBps |
+| --- | --- | --- |
+| No history | 0 | 0 |
+| First circle in progress, 3 payments on time | 400 | 0 |
+| 3 circles completed, 15 payments all on time | 850 | 6800 (68%) |
+| 5 circles completed, all on time | 1000 | 8000 (the cap) |
+| 2 circles, 8 on time and 2 late | 620 | 4960 |
+| 1 circle with 1 default | 270 | 2160 |
+
+These rows are the shared test vectors in `vectors.json`: the TypeScript port and the Solidity library must agree on every one. `trustBps` feeds the collateral waiver on [Safety](/docs/safety#withheld-collateral). It's always capped by what the reserve can back, so a high score can never put other members at risk.
+
+<Callout tone="honest">
+
+The constants are a first proposal, tuned for a beta. They'll change as we learn from real circles. Any change updates `TrustMath.sol`, `trust.ts` and the vectors together.
+
+</Callout>
+
+## Reading a score from any app
+
+### On-chain
+
+```solidity
+uint16 s = ICreditRegistry(registry).score(member);
+ICreditRegistry.Record memory r = ICreditRegistry(registry).recordOf(member);
+```
+
+### GraphQL (Envio)
+
+```graphql
+query Score($id: String!) {
+  CreditRecord(where: { id: { _eq: $id } }) {
+    circlesJoined
+    circlesCompleted
+    paymentsOnTime
+    paymentsLate
+    defaults
+    totalContributed
+    score
+  }
+}
+```
+
+The `id` is the lower-cased account address. See [Data](/docs/data) for the endpoint.
+
+### REST
+
+```bash
+curl https://<your-turn-host>/api/credit/0xYourAddress
+```
+
+```json
+{
+  "address": "0x…",
+  "score": 850,
+  "record": { "circlesJoined": 3, "circlesCompleted": 3, "paymentsOnTime": 15, "paymentsLate": 0, "defaults": 0 },
+  "network": "Monad testnet",
+  "verify": "https://<explorer>/address/<CreditRegistry>#readContract"
+}
+```
+
+The REST endpoint is a thin, cached wrapper around the indexer. Anyone can check its answer against `score(address)` on-chain.
+
+## Shareable card
+
+The app can render a card, for example "3 circles · 100% on time · 850", with a link to `/credit/<address>`. That page shows the record, and the link to the on-chain `score()` that proves it. Sharing is always a choice. The record itself is public, because an honest record is only useful if others can check it.

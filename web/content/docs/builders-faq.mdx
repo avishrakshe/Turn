@@ -1,0 +1,43 @@
+<PlainWords>
+
+These are the questions other developers ask us most. The short version: Turn's contracts and data are public, anyone can build on them, and nothing important depends on Turn's own servers staying up.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Can my app read a user's Turn Score?
+
+Yes, three ways: `score(address)` on `CreditRegistry`, the Envio GraphQL `CreditRecord` entity, or `GET /api/credit/:address`. See [Turn Score](/docs/turn-score#reading-a-score-from-any-app). On-chain is the one to trust. The others are faster.
+
+## Can I run my own keeper?
+
+Yes. Every round function is permissionless. Run `automation/keeper`, which shares `decide()` with the CRE workflow, or call `collect`, `closeAuction`, `payout` and `markDefault` from anything. Duplicate calls are harmless. See [Automation](/docs/automation).
+
+## Can I build my own front end?
+
+Yes. A circle only needs the contracts. For accounts, you can use mera and `TurnAccount` like we do, or skip both: plain EOAs work, and fall back to an AUSD allowance instead of a pull grant.
+
+## Can I create circles from a contract?
+
+Yes, with `CircleFactory.createCircle(params, fixedOrder, inviteHash)`. Keep the invite secret off-chain. Only its hash is stored, and `join` checks the preimage.
+
+## How do I get test funds?
+
+On Monad testnet, get MON from `faucet.monad.xyz`, and Mock AUSD from its capped `faucet()` function. Mock AUSD is clearly named "TEST ONLY", and it's never deployed to mainnet.
+
+## Why is the gas limit so tight in your relayer?
+
+Monad charges for the **gas limit**, not the gas used: `value + gas_bid × gas_limit`. Over-estimating wastes real money, so the relayer estimates and adds only 10%.
+
+## Where do the numbers on the homepage come from?
+
+From `GlobalStats` in the indexer, labelled with their network, and cached for a minute. If the indexer isn't configured, the homepage shows no numbers at all. We never show placeholders.
+
+## Is the simulation on the homepage real?
+
+It runs `web/lib/economics`, the same rules as the contracts, with no network access. It's covered by the tests described on [Security](/docs/security#invariants-and-testing).
+
+## How do I report a security issue?
+
+Please open a private security advisory on [GitHub](https://github.com/avishrakshe/Turn/security/advisories/new) rather than a public issue.

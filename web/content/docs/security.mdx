@@ -1,0 +1,67 @@
+<PlainWords>
+
+Turn is new, and nobody has checked its code independently yet. We say so everywhere, and during the beta we cap how much a circle can hold.
+
+Here's what Turn is designed to guarantee: nobody, not us and not the organiser, can take a circle's money outside its rules, and members who pay on time always get their full turn.
+
+This page lists what could go wrong, how we test for it, and what we haven't solved yet.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Audit status
+
+**Unaudited hackathon build.** No external audit has been done. Mainnet use is capped, with `maxContribution` defaulting to 25 AUSD and `maxMembers` to 10. Please use small amounts.
+
+## Threat model
+
+| Actor | Could try to | Why it doesn't work |
+| --- | --- | --- |
+| **A member** | Take the pot early and stop paying | Collateral covering their remaining debt is withheld from the payout. Any waived part is backed by the reserve (I1). |
+| **A member** | Snipe or signal in the auction | Bids are sealed with commit–reveal. The salt comes from a key only they hold. |
+| **A member** | Block a round by not paying | `collect` retries each member separately, and `markDefault` covers them after grace. Payout is delayed by at most `gracePeriod`. |
+| **The organiser** | Move the pot | The organiser has no special role after creating the circle. |
+| **The relayer** | Steal or alter transactions | Every batch is EIP-712 signed by the member (nonce, deadline, chain ID). The relayer can only **censor**, which any member with MON can route around. |
+| **The keeper** | Pay the wrong person, or skip rounds | It can only call permissionless functions that check their own rules. The worst case is a late round, and anyone can call them. |
+| **The factory owner** | Freeze funds | `pause` only blocks new circles and joins. `collect`, `payout`, `markDefault`, `claim` and withdrawals can never be paused. |
+| **Someone else's contract** | Pull from a member's account | `TurnAccount` pulls only for factory-registered circles, within the grant's amount, round and expiry. |
+| **Front-running** | Reorder bids or payments | Monad has no public mempool. Commit–reveal makes ordering irrelevant for bids. |
+
+## Invariants and testing
+
+The invariants I0–I3 are defined on [Safety](/docs/safety#the-invariants).
+
+**Done:**
+- The circle economics are ported to TypeScript (`web/lib/economics`) and tested with Vitest:
+  - `plan.md`'s worked ejection example, to the unit
+  - shared vectors for `TrustMath` and for auction scenarios
+  - **400 randomized circles** (3–10 members, random amounts, bids, trust, reserve shares and missed payments), asserting I0, I1 and I3 after every step and I2 at the end
+- Those tests already found and fixed spec gaps:
+  - leftover reserve could get stuck when every member had missed once
+  - large bids needed a cap so the payout can always cover the withheld collateral
+  - an ejection in the final round turns that round into the settlement slot
+  - collateral must round **up** on release
+
+**Planned for the contracts (Foundry):**
+- unit tests for each contract
+- fuzz tests over bids, amounts, timings and trust inputs
+- **invariant tests** for I0–I3 with a handler that performs random joins, payments, misses, bids and time jumps
+- the same `vectors.json` run against Solidity, so the two implementations can't drift apart
+- scenario tests: the seven required flows, ejection settlement, and a trusted member's default covered by the reserve
+
+## Static analysis
+
+Not run yet, because there's no Solidity code yet. Slither and Foundry's `forge lint` will run in CI once the contracts land, and their results will be summarised here. Nothing will be hidden.
+
+## Known limitations
+
+- **Unaudited**, as above.
+- **The factory owner is a single deployer key.** Moving it to a multisig is future work. The owner still can't touch funds.
+- **Relayer censorship.** A censoring relayer can delay users who have no MON. Round progress doesn't depend on it.
+- **Reveal liveness.** A sealed bid that isn't revealed in time doesn't count.
+- **Fixed-order circles** build almost no reserve, so trust rarely waives collateral there.
+- **Exchange-rate risk.** The pot is dollars. Its value in rupees or dirhams moves.
+- **Stablecoin risk.** Turn depends on AUSD holding its peg and staying transferable.
+- **Local rules.** Savings committees are regulated differently in different places. Turn is a tool for groups who know each other.
+- **Fresh-device sign-in** without a stored credential is still being verified with mera.

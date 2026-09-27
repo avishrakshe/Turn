@@ -72,3 +72,32 @@ member who hears it up front won't feel cheated later.
 
 **Script fonts stay off the landing page** until someone picks that language in the reminder preview.
 The language tab labels use system fonts, which cover every script.
+
+## Phase 3 — Docs
+
+**Custom MDX, not a docs framework.** Fumadocs supports Next 16, but it pulls in a second bundler
+toolchain, and its UI would have fought the design system. `@next/mdx` with a small layout (sidebar,
+"on this page", search) keeps the docs visibly part of Turn.
+
+**Two layers on every page.** An "In plain words" card comes first, in 3–5 sentences a member can
+follow. After an "Under the hood" divider come contracts, functions, events, formulas and diagrams. A
+family member and a judge can both stop reading at the point where they have what they need.
+
+**Honesty is structural.**
+- Every page carries a "beta, unaudited, being built" line.
+- Contract addresses come only from `contracts/deployments/*.json`.
+- Source links render only if the file exists in the repo; otherwise they say "not published yet".
+- Limitations get their own callout style, so they're easy to spot rather than buried.
+
+**Diagrams stay readable.** Mermaid loads only when a diagram scrolls near view, draws in the site's
+tokens, and redraws when the theme changes. Diagrams render at their natural size and scroll sideways
+rather than shrink to unreadable text. Each one has a "Diagram as text" fallback.
+
+**A reduced-motion bug, found by the docs.** The global reduced-motion rule set every transition to
+0.01ms. Because `transition-property` defaults to `all`, that made every style change on the page
+animate for a moment, and Mermaid measured stale layout, blowing diagrams up to 7× their size. It's now
+`0s`, which fixes the whole site, not just diagrams.
+
+**Search without a service.** A static JSON index (one entry per section) is built at build time and
+fetched only when search opens (`/` or Ctrl/⌘ K). The search is keyboard-first, with results that
+jump straight to the right heading.

@@ -1,0 +1,53 @@
+<PlainWords>
+
+Every circle's pot is held in US dollars, in a digital form called a stablecoin. That's what lets someone in Dubai and someone in Mumbai share one pot.
+
+You never have to think about dollars, though. If you live in Mumbai, the app shows rupees. If you live in Dubai, it shows dirhams. The dollar amount underneath stays the same.
+
+Because the pot is held in dollars, its value in your own currency moves a little with the exchange rate, just like money sent home.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## AUSD
+
+Turn settles everything in **AUSD**, a US-dollar stablecoin issued by [Agora](https://www.agora.finance). It has **6 decimals**, so 1 AUSD = `1_000_000` base units.
+
+| Network | AUSD address |
+| --- | --- |
+| Monad mainnet (143) | `0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a` |
+| Monad testnet (10143) | `0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC` |
+
+These addresses and `decimals()` were read on-chain. The contracts don't hard-code the token: it's an `IERC20` passed to the factory at deploy time. The deploy script picks it by chain ID.
+
+On testnet and in CI, Turn uses **Mock AUSD** (`mAUSD`, labelled "TEST ONLY", 6 decimals) with a capped public `faucet()`. It's never deployed to mainnet.
+
+### Why a dollar stablecoin
+
+- **One unit for every member.** A circle spanning the UAE and India needs one currency on-chain. The dirham is pegged to the dollar, and the dollar is the usual reference for money sent to India.
+- **Stable within a circle's life.** Circles last months, so a volatile token would make "₹5,000 a month" meaningless.
+- **Issued natively on Monad**, so there's no bridge in the path.
+
+## Local currency is a display layer
+
+Each member picks a display currency, stored on-chain with `setDisplayCurrency(bytes3)` and emitted as `MemberProfileSet`, so it survives a device change. The app converts for display only:
+
+- Amounts are formatted with `Intl.NumberFormat` in the member's locale. Rupees always use Indian grouping (₹1,00,000).
+- Rates come from an FX feed and are cached. They never affect settlement.
+- Receipts show both, for example "You paid AED 367 ≈ 100 AUSD, settled instantly". On the main screens only the local amount appears.
+
+The indexer aggregates `CorridorStats` by currency pair (for example AED→INR), so corridor volume can be reported without knowing who anyone is.
+
+## Adding money
+
+"Add money" sits behind a `RampProvider` adapter with two implementations:
+
+- **`mercuryo`**: the [Mercuryo](https://mercuryo.io) widget, for card or bank purchases.
+- **`faucet`**: Mock AUSD on testnet.
+
+<Callout tone="honest">
+
+Whether Mercuryo supports AUSD on Monad directly is still being confirmed. If it doesn't, the widget on-ramps to a Monad stablecoin it does support, the app says so clearly, and a swap to AUSD is listed as future work. Card top-ups can carry the provider's fee, which Turn doesn't control.
+
+</Callout>

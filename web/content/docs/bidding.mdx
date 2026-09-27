@@ -1,0 +1,111 @@
+<PlainWords>
+
+If you need the money early, for a wedding, school fees or stock for your shop, you can bid for this month's pot by offering a discount. The biggest discount wins.
+
+Bids are sealed: nobody, not even Turn, can see your bid until bidding closes. So nobody can wait until the last second and beat you by one rupee.
+
+The discount isn't lost. Most of it is shared equally with everyone else in the circle as money off their next payment. A small part goes into the circle's safety reserve.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Why sealed bids
+
+With open bids, visible on-chain as they arrive, the auction is easy to game:
+
+- **Sniping.** Wait for the last block and outbid the leader by the smallest step.
+- **Collusion signalling.** Friends can see each other's bids and coordinate.
+- **Pressure.** In a family circle, seeing that an uncle bid 8% makes it awkward to bid 9%.
+
+Monad has no public mempool, which removes front-running. It doesn't hide bids once they land in a block, though. So Turn uses **commit–reveal**.
+
+## Commit–reveal
+
+<Mermaid
+  title="A sealed bid from commit to payout"
+  chart={`
+sequenceDiagram
+  participant App as Member's app
+  participant C as Circle
+  participant K as Keeper (anyone)
+  Note over App,C: Bid window
+  App->>C: commitBid(hash)
+  Note right of C: amount hidden
+  Note over App,C: Reveal window
+  App->>C: revealBid(bps, salt)
+  C->>C: hash matches?
+  Note right of C: BidRevealed
+  K->>C: closeAuction()
+  Note right of C: AuctionClosed
+  K->>C: payout()
+`}
+/>
+
+1. **Commit** during the bid window:
+   `hash = keccak256(abi.encode(circle, round, member, discountBps, salt))`.
+   Only the hash goes on-chain. Including the circle, round and member stops a commit from being replayed or copied.
+2. **Reveal** after the bid window closes: `revealBid(discountBps, salt)`. The contract recomputes the hash and records the bid.
+3. **Close**: `closeAuction()` (permissionless) picks the highest revealed discount that is valid for that member. Ties go to the higher [Turn Score](/docs/turn-score), then to join order. With no valid bids, the same tie-break picks the winner.
+
+A bid that is never revealed simply doesn't count. There's no penalty, because a member whose phone was off shouldn't lose money.
+
+### The salt comes from your passkey
+
+A random salt would have to be stored, and Turn keeps nothing essential on the device (see [the stateless-device guarantee](/docs/accounts#the-stateless-device-guarantee)). So the salt is **derived** instead:
+
+```ts title="Deriving the bid salt"
+// EIP-712 typed data, signed by the member's own passkey-derived key.
+const signature = await account.signTypedData({
+  domain: { name: "Turn", version: "1", chainId, verifyingContract: circle },
+  types: { BidSalt: [{ name: "circle", type: "address" }, { name: "round", type: "uint256" }] },
+  primaryType: "BidSalt",
+  message: { circle, round },
+});
+const salt = keccak256(signature);
+```
+
+ECDSA signatures from viem are deterministic (RFC 6979). The same passkey on any device produces the same key, the same signature and so the same salt. The app can always rebuild a reveal after a reload or on a new phone. Nobody else can: without the key there's no signature, and without the signature there's no salt.
+
+### Auto-reveal
+
+When bidding closes and the app is open, it reveals your bid **silently** using the in-memory signing session. There's no extra prompt. If the app isn't open, a reminder asks you to open it before the reveal window ends.
+
+<Callout tone="honest">
+
+A reveal needs the member's key, so the relayer can't reveal on your behalf without learning your bid. A bid that isn't revealed in time doesn't count. We chose this over trusting a server with sealed bids.
+
+</Callout>
+
+## Bid limits
+
+A bid must leave the winner enough to cover the safety deposit held back from the pot (see [Safety](/docs/safety#withheld-collateral)). So each member's maximum is:
+
+```text
+withheld  = max(0, remainingDebt − entryDeposit)
+maxBidBps = min(maxDiscountBps, (pot − withheld) × 10 000 / pot)
+```
+
+For example, in a 5-person circle with C = 100 in round 1, the pot is 500, the winner will still owe 400, and the deposit covers 100. That leaves 300 withheld, so the maximum bid is 40%. The limit is checked again at close, in case the pot or the deposit changed since the bid was made. The app only offers bids within the limit.
+
+## How the discount is shared
+
+On payout, with discount `D = pot × discountBps / 10 000`:
+
+- `reserveBps` of D (default **20%**) goes to the circle's [protection reserve](/docs/safety#protection-reserve).
+- The remaining **80%** is split **equally** among all other active members, including earlier winners, as **credit**.
+- Rounding dust from the split goes to the reserve, so no amount is lost.
+- Credit is spent automatically on the member's next contribution. Anything left is claimable when the circle completes.
+
+A worked example: in a 5-person circle with C = ₹5,000, you win round 1 with a 4% bid.
+
+| | Amount |
+| --- | --- |
+| Pot | ₹25,000 |
+| Discount (4%) | ₹1,000 |
+| To the reserve (20%) | ₹200 |
+| Credit to each of the other 4 | ₹200 |
+| Safety deposit withheld (you still owe ₹20,000; your ₹5,000 entry deposit counts) | ₹15,000 |
+| **Paid to you now** | **₹9,000** |
+
+Everything held for safety, your ₹5,000 deposit plus the ₹15,000 withheld, comes back ₹5,000 at a time with each of your 4 remaining payments. These numbers come from the same engine that runs the [simulation on the homepage](/#demo).

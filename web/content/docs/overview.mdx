@@ -1,0 +1,49 @@
+<PlainWords>
+
+Turn runs the savings committee your family already knows (a chit, a *committee*, a *kameti*) on a phone. Everyone puts in the same amount each month, and each month one person takes home the whole pot.
+
+The difference is who holds the money. In a normal committee, one trusted person does. In Turn, a small program on a public blockchain does. It follows the rules everyone agreed to, it can't run off, and anyone can check what it did.
+
+You never see any of that. You see Face ID, your own currency, and plain words.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Why a blockchain at all
+
+A savings circle is a trust problem, which is exactly what a blockchain is good at. We use one for four reasons.
+
+| Need | What the chain gives us |
+| --- | --- |
+| **Nobody can take the pot** | The pot is held by the circle's own smart contract. It can only pay out according to its rules: to the round's winner, or back to members. No one holds a key that moves it anywhere else. |
+| **Everyone can check** | Every payment, payout and missed month is a public event. Members don't have to trust the organiser's notebook. |
+| **Money moves across borders instantly** | A member in Dubai and a member in Mumbai pay into the same pot in a dollar stablecoin. Settlement takes about a second on Monad, with no bank transfer fee taken from the pot. |
+| **Your record is yours** | Paying on time builds a public [Turn Score](/docs/turn-score) that any app can read. It isn't locked in our database. |
+
+## The pieces
+
+<Mermaid
+  title="How the parts of Turn fit together"
+  chart={`
+flowchart TB
+  U["Member's phone<br/>Face ID passkey"] -- "signed request" --> R["Relayer<br/>pays network fees"]
+  R -- "transaction" --> TA["TurnAccount<br/>(member's own account)"]
+  TA --> C["Circle contract<br/>holds the pot"]
+  F["CircleFactory"] -- creates --> C
+  C -- "records payments" --> CR["CreditRegistry<br/>Turn Score"]
+  K["Chainlink CRE<br/>keeper"] -- "runs rounds" --> C
+  C -- events --> E["Envio indexer"]
+  E -- "history, stats" --> U
+`}
+/>
+
+- **Accounts.** Each member's account is derived from their passkey (Face ID or fingerprint) and upgraded with EIP-7702 to run `TurnAccount`. See [Accounts & passkeys](/docs/accounts).
+- **Circles.** `CircleFactory` creates one `Circle` contract per group. It collects contributions, runs the auction, pays out, and covers missed payments. See [Circles](/docs/circles) and [Safety](/docs/safety).
+- **Money.** Everything settles in AUSD, a US-dollar stablecoin. Local currencies are only a display layer. See [Money](/docs/money).
+- **Automation.** Chainlink CRE calls the round functions on schedule. Anyone else can call them too. See [Automation](/docs/automation).
+- **Data.** An Envio indexer turns contract events into the history, stats and scores the app shows. See [Data](/docs/data).
+
+## Networks
+
+Turn is being built on **Monad testnet** (chain ID `10143`) and will run a small, capped beta on **Monad mainnet** (chain ID `143`). Addresses for each network are listed on [Contracts](/docs/contracts), read from the deploy output, never typed by hand.

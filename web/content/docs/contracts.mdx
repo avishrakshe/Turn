@@ -1,0 +1,87 @@
+<PlainWords>
+
+Turn is made of a handful of small programs, called contracts, on the Monad blockchain. Their code is public, and anyone can read what they do.
+
+This page lists where each one lives on each network, with links to see them on a block explorer.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Addresses
+
+<ContractAddresses />
+
+The table is built from `contracts/deployments/<chainId>.json`, written by the deploy script (`Deploy.s.sol`). The docs never contain hand-typed addresses, so they can't drift from what is actually deployed.
+
+## Contracts
+
+| Contract | What it does | Source |
+| --- | --- | --- |
+| `CircleFactory` | Creates circles as EIP-1167 clones, keeps the registry of real circles, enforces beta caps, and can pause creating and joining | <Source path="contracts/src/CircleFactory.sol" /> |
+| `Circle` | One per group: rounds, sealed-bid auction, collateral, reserve, defaults, ejection, settlement | <Source path="contracts/src/Circle.sol" /> |
+| `CreditRegistry` | Non-transferable payment records and `score(address)` | <Source path="contracts/src/CreditRegistry.sol" /> |
+| `TrustMath` | Pure library: `score(record)` and `trustBps(record)` | <Source path="contracts/src/libraries/TrustMath.sol" /> |
+| `TurnAccount` | EIP-7702 delegate: EIP-712 signed batches and contract-enforced auto-pay | <Source path="contracts/src/TurnAccount.sol" /> |
+| `TurnKeeper` | Chainlink CRE receiver that calls permissionless round functions | <Source path="contracts/src/TurnKeeper.sol" /> |
+| `MockAUSD` | Test token with a capped faucet. Testnet and local only | <Source path="contracts/src/test-tokens/MockAUSD.sol" /> |
+
+ABIs will be exported from the Foundry build (`contracts/out/`) through the `@turn/contracts` workspace package, so the app, indexer and keeper all use the same ones.
+
+## Events
+
+```solidity title="ICircle events"
+event Joined(address indexed member, uint256 deposit, bytes3 displayCurrency);
+event CircleStarted(uint64 startTime, address[] members);
+event ContributionPaid(address indexed member, uint256 indexed round, uint256 amount, uint256 creditUsed, bool onTime);
+event ContributionFailed(address indexed member, uint256 indexed round);
+event BidCommitted(address indexed member, uint256 indexed round);
+event BidRevealed(address indexed member, uint256 indexed round, uint16 discountBps);
+event AuctionClosed(uint256 indexed round, address winner, uint16 discountBps, bool noBids);
+event PayoutMade(address indexed winner, uint256 indexed round, uint256 pot, uint256 discount,
+                 uint256 toReserve, uint256 collateralWithheld, uint256 trustWaiver, uint256 netPaid);
+event CreditAccrued(address indexed member, uint256 indexed round, uint256 amount);
+event CollateralReleased(address indexed member, uint256 amount);
+event DefaultMarked(address indexed member, uint256 indexed round, uint256 fromDeposit,
+                    uint256 fromCollateral, uint256 fromReserve);
+event MemberEjected(address indexed member, uint256 indexed round, uint256 k, uint256 refund, uint256 penalty);
+event RepaymentOwed(address indexed winner, uint256 amount);
+event ReserveChanged(uint256 balance, uint256 totalExposure);
+event CircleCompleted(uint256 reserveDistributed);
+event Claimed(address indexed member, uint256 amount);
+event MemberProfileSet(address indexed member, bytes3 displayCurrency);
+```
+
+```solidity title="Factory, registry and account events"
+event CircleCreated(address indexed circle, address indexed creator, Params params, bytes32 inviteHash);
+event LimitsUpdated(uint128 maxContribution, uint8 maxMembers);
+event RecordUpdated(address indexed account, Record record);
+event Executed(uint256 indexed nonce, uint256 calls);
+event PullGranted(address indexed circle, uint128 maxAmount, uint32 period, uint64 validUntil);
+event PullRevoked(address indexed circle);
+event Pulled(address indexed circle, uint256 indexed round, uint256 amount);
+```
+
+<Callout title="Changed from the first plan">
+
+`docs/plan.md` first described open bids (`bid(uint16)` with a `BidPlaced` event). Turn now uses sealed commit–reveal bids (see [Bidding](/docs/bidding)), so `commitBid(bytes32)` and `revealBid(uint16, bytes32)` replace `bid`, and `BidCommitted` and `BidRevealed` replace `BidPlaced`.
+
+</Callout>
+
+## Deployment file format
+
+```json title="contracts/deployments/10143.json"
+{
+  "chainId": 10143,
+  "network": "Monad testnet",
+  "explorer": "https://testnet.monadvision.com",
+  "contracts": {
+    "CircleFactory": "0x…",
+    "Circle (implementation)": "0x…",
+    "CreditRegistry": "0x…",
+    "TurnAccount": "0x…",
+    "TurnKeeper": "0x…",
+    "AUSD": "0x…"
+  }
+}
+```

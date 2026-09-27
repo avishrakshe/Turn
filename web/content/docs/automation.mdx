@@ -1,0 +1,66 @@
+<PlainWords>
+
+Each month, someone has to collect the payments, close the bidding, and pay the winner. In Turn, nobody has to remember: an automated service does it on schedule.
+
+That service has no special powers. It presses the same buttons that anyone is allowed to press. If it ever stopped, any member, or anyone at all, could run the circle forward.
+
+It also sends reminders on Telegram, in each member's language and currency.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Every round function is permissionless
+
+`collect()`, `closeAuction()`, `payout()` and `markDefault(member, round)` can be called by **any** address. Each one checks timing and state itself, and is safe to call twice:
+
+- `collect()` is idempotent. It pulls from each member inside a `try/catch`, so one failing member can't block the others (`ContributionFailed`).
+- `closeAuction()` only works after the bid and reveal windows.
+- `payout()` only works once every active member is paid or covered.
+- `markDefault()` only works after `gracePeriod`.
+
+So automation affects **liveness**, never **safety**. The worst a broken keeper can do is make a round late.
+
+## Chainlink CRE workflow
+
+Turn's primary keeper is a [Chainlink Runtime Environment](https://docs.chain.link/cre) (CRE) workflow. CRE supports Monad mainnet (CLI 1.29 or later) and testnet (CLI 1.30 or later, TS SDK 1.19 or later).
+
+<Mermaid
+  title="One run of the keeper workflow"
+  chart={`
+flowchart TD
+  T["Cron trigger<br/>every minute"] --> Q["Read state:<br/>Envio + contract views"]
+  Q --> D{"decide()<br/>shared TS module"}
+  D -- "jobs due" --> W["Write report<br/>(circle, action, args)[]"]
+  W --> FW["CRE forwarder"] --> TK["TurnKeeper.onReport"]
+  TK --> C["Circle.collect / closeAuction /<br/>payout / markDefault"]
+  D -- "reminders due" --> FX["FX API<br/>AUSD → member currency"]
+  FX --> LLM["LLM: message in<br/>member's language"]
+  LLM --> TG["Telegram bot API"]
+`}
+/>
+
+- **Trigger:** a cron trigger, every minute in the demo and hourly for monthly circles.
+- **Reads:** circle state from Envio, with key views confirmed on-chain.
+- **`decide()`:** a pure TypeScript function, shared with the fallback keeper, that returns the due jobs and reminders.
+- **On-chain writes** go through the CRE forwarder to `TurnKeeper.onReport(metadata, report)`. `TurnKeeper` accepts only the configured forwarder, decodes `Job[]` = `(circle, action, args)`, and calls the permissionless function. Action is one of `COLLECT`, `CLOSE_AUCTION`, `PAYOUT` or `MARK_DEFAULT`.
+- **Reminders:** amounts are converted from AUSD with an FX API. The reminder text is written in the member's language by an LLM from a fixed template, then sent through the Telegram Bot API. LLM output is never used for anything on-chain.
+
+### Forwarder addresses
+
+| Network | Simulation | Production |
+| --- | --- | --- |
+| Monad testnet | `0xB9F79d863261869B234c481D1f9A7af84AeAd192` | `0xF8344CFd5c43616a4366C34E3EEE75af79a74482` |
+| Monad mainnet | `0x9eF6468C5f37b976E57d52054c693269479A784d` | `0x76c9cf548b4179F8901cda1f8623568b58215E62` |
+
+Source: <Source path="contracts/src/TurnKeeper.sol" />, <Source path="automation/shared/decide.ts" />, <Source path="automation/cre/workflow.ts" />.
+
+## Fallback keeper
+
+A small Node process (`automation/keeper`) runs the same `decide()` and calls the circle functions directly from its own funded key. Run it if CRE is unavailable, or run your own. Two keepers racing is harmless: the second call finds nothing to do.
+
+<Callout tone="honest">
+
+Whether a CRE production deployment needs early access is still being checked. If it does, the fallback keeper runs the demo while the CRE workflow runs in simulation.
+
+</Callout>

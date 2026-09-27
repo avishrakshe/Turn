@@ -25,7 +25,15 @@ for (const vp of viewports) {
       // "load" rather than "networkidle": Next keeps route prefetches open, which can stall idle detection.
       await page.goto(base + p, { waitUntil: "load" });
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(400);
+      // Scroll through once so lazy content (diagrams, observers) renders before the capture.
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += innerHeight / 2) {
+          scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 120));
+        }
+        scrollTo(0, 0);
+      });
+      await page.waitForTimeout(1500);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       if (overflow > 0) console.warn(`WARN ${p} @${vp.width}px overflows horizontally by ${overflow}px`);
       const slug = p === "/" ? "home" : p.replace(/^\//, "").replaceAll("/", "-");

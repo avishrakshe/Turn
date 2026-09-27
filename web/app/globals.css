@@ -108,9 +108,47 @@
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+      /* 0s, not 0.01ms: transition-property defaults to "all", so any non-zero duration makes
+         every style change on every element transition, and layout code that measures right
+         after a change (Mermaid, getBBox) reads stale values. */
+      transition-duration: 0s !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* Long-form docs typography. Components opt out with .not-prose. */
+@layer components {
+  .docs-prose { font-size: 1.0625rem; line-height: 1.7; }
+  .docs-prose > h1 { font-size: clamp(2.4rem, 5vw, 3.4rem); margin-top: 0.75rem; }
+  .docs-prose > .lead { color: var(--ink-muted); font-size: 1.25rem; margin-top: 1rem; line-height: 1.55; }
+  .docs-prose :where(h2):not(:where(.not-prose *)) { font-size: 1.9rem; margin-top: 3rem; margin-bottom: 1rem; }
+  .docs-prose :where(h3):not(:where(.not-prose *)) { font-size: 1.35rem; margin-top: 2.2rem; margin-bottom: 0.6rem; }
+  .docs-prose :where(p, ul, ol):not(:where(.not-prose *)) { margin-top: 1rem; }
+  .docs-prose :where(ul):not(:where(.not-prose *)) { list-style: disc; padding-inline-start: 1.4rem; }
+  .docs-prose :where(ol):not(:where(.not-prose *)) { list-style: decimal; padding-inline-start: 1.4rem; }
+  .docs-prose :where(li):not(:where(.not-prose *)) { margin-top: 0.35rem; }
+  .docs-prose :where(li::marker) { color: var(--ink-faint); }
+  .docs-prose :where(strong) { font-weight: 600; }
+  .docs-prose :where(a):not(:where(.not-prose *, h2 a, h3 a)) { color: var(--teal-ink); font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  .docs-prose :where(:not(pre) > code) { font-size: 0.88em; background: var(--paper-sunk); border-radius: 0.4rem; padding: 0.12em 0.4em; overflow-wrap: anywhere; }
+  .docs-prose :where(blockquote) { border-inline-start: 3px solid var(--marigold); padding-inline-start: 1rem; color: var(--ink-muted); margin-top: 1rem; }
+  .docs-prose :where(hr) { border-color: var(--line); margin: 2.5rem 0; }
+  .docs-prose .table-wrap { margin-top: 1.25rem; overflow-x: auto; border: 1px solid var(--line); border-radius: 1rem; }
+  .docs-prose table { width: 100%; font-size: 0.95rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .docs-prose th { text-align: start; font-weight: 600; background: var(--paper-sunk); }
+  .docs-prose :where(th, td) { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .docs-prose tr:last-child td { border-bottom: 0; }
+
+  /* Code blocks (rehype-pretty-code, dual theme) */
+  .docs-prose figure[data-rehype-pretty-code-figure] { margin-top: 1.25rem; }
+  .docs-prose pre { background: var(--paper-sunk); border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1.1rem; overflow-x: auto; font-size: 0.86rem; line-height: 1.6; }
+  .docs-prose pre code { font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace; }
+  .docs-prose [data-rehype-pretty-code-title] { font-size: 0.8rem; color: var(--ink-muted); padding: 0 0.25rem 0.4rem; font-weight: 600; }
+  .docs-prose pre span { color: var(--shiki-light); }
+  [data-theme="dark"] .docs-prose pre span { color: var(--shiki-dark); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .docs-prose pre span { color: var(--shiki-dark); }
   }
 }
 

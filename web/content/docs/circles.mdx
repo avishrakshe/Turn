@@ -1,0 +1,75 @@
+<PlainWords>
+
+A circle is a group of 3 to 20 people who each put in the same amount every month. Each month, one person receives the whole pot. By the end, everyone has had exactly one turn.
+
+Someone creates the circle and shares an invite link. People join with Face ID and pay a small deposit. When the last seat fills, the first month begins.
+
+Turns can go in a fixed order, or members can bid for an early turn by offering a discount.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## Lifecycle
+
+<Mermaid
+  title="The life of a circle"
+  chart={`
+stateDiagram-v2
+  [*] --> FORMING: createCircle
+  FORMING --> FORMING: join (pays entry deposit)
+  FORMING --> ACTIVE: last seat filled (CircleStarted)
+  state ACTIVE {
+    [*] --> Collect
+    Collect --> Bidding: AUCTION mode
+    Collect --> Payout: FIXED_ORDER mode
+    Bidding --> Reveal: bid window closes
+    Reveal --> Payout: closeAuction
+    Payout --> Collect: next round
+  }
+  ACTIVE --> Settlement: last round paid, and someone was ejected
+  ACTIVE --> COMPLETED: last round paid
+  Settlement --> COMPLETED: repayments collected
+  COMPLETED --> [*]: members claim
+`}
+/>
+
+1. **Create.** `CircleFactory.createCircle(params, fixedOrder, inviteHash)` deploys an EIP-1167 clone of `Circle` and registers it. The invite link carries a secret whose hash is `inviteHash`.
+2. **Join.** `join(inviteSecret, displayCurrency)` pulls the entry deposit. In the app, joining is a single Face ID prompt that also approves AUSD and grants auto-pay (see [Accounts](/docs/accounts)).
+3. **Start.** When the n-th member joins, `CircleStarted(startTime, members)` fires and round 1 begins.
+4. **Rounds.** Each round runs from `roundStart`:
+   - `collect()` is open from `roundStart`, and can be retried until the round ends.
+   - In auction circles, sealed bids are accepted during the bid window (see [Bidding](/docs/bidding)).
+   - `payout()` runs once every active member has **paid** or been **covered**, meaning `markDefault` ran after the grace period and the shortfall was filled.
+5. **Settlement.** Only if a member was ejected: extra slots collect repayments (see [Safety](/docs/safety#ejection)).
+6. **Complete.** `CircleCompleted` fires. Members `claim()` collateral, deposits, unused credit and their share of the reserve.
+
+A late payer delays the payout by at most `gracePeriod`. They never shrink the pot.
+
+## Parameters
+
+| Parameter | Meaning | Limits and defaults |
+| --- | --- | --- |
+| `n` | Number of members, and so the number of rounds | 3 to `maxMembers` (10 on the mainnet beta) |
+| `contribution` | C, what each member pays per round, in AUSD base units | ≤ `maxContribution` (25 AUSD on the mainnet beta) |
+| `period` | Seconds between rounds | Monthly in real circles, 300 s in the demo |
+| `mode` | `FIXED_ORDER` or `AUCTION` | |
+| `maxDiscountBps` | Largest discount a bid may offer | ≤ 5000 (50%) |
+| `bidWindow` | How long bidding stays open each round | Less than `period`; 120 s in the demo |
+| `gracePeriod` | How long after collection before a miss can be covered | `bidWindow + gracePeriod` less than `period`; 60 s in the demo |
+| `entryDeposit` | Paid at join, covers a first miss before winning | Defaults to C |
+| `reserveBps` | Share of each discount kept in the protection reserve | Default 2000 (20%) |
+
+The factory owner can change `maxContribution` and `maxMembers`, and can **pause** creating circles and joining them. Pausing never blocks `collect`, `payout`, `markDefault`, `claim` or any withdrawal, so money can always leave.
+
+## Payouts and the pot
+
+Invariant **I3**: every payout pot equals `activeMembers × C`. Before any ejection that's `n × C`. From the ejection round on, it's `(n − 1) × C`. Nothing else can reduce a pot.
+
+A winner does **not** receive the whole pot in cash. Enough is held back to cover what they still owe. See [Safety](/docs/safety#withheld-collateral).
+
+## Events
+
+`Joined`, `CircleStarted`, `ContributionPaid`, `ContributionFailed`, `BidCommitted`, `BidRevealed`, `AuctionClosed`, `PayoutMade`, `CreditAccrued`, `CollateralReleased`, `DefaultMarked`, `MemberEjected`, `RepaymentOwed`, `ReserveChanged`, `CircleCompleted`, `Claimed`, `MemberProfileSet`. The full signatures are on [Contracts](/docs/contracts#events).
+
+Source: <Source path="contracts/src/Circle.sol" />, <Source path="contracts/src/CircleFactory.sol" />.
