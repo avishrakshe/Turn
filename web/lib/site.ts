@@ -1,6 +1,11 @@
 // Site-wide constants. URLs come from env so nothing environment-specific is hard-coded.
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+// On Vercel, without an explicit site URL, fall back to the project's production domain
+// (a system variable Vercel exposes to Next.js builds).
+const vercelHost = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL;
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || (vercelHost ? `https://${vercelHost}` : "http://localhost:3000")
+).replace(/\/$/, "");
 export const APP_PATH = "/app";
 
 export const TAGLINE = "Save together. Take turns.";
