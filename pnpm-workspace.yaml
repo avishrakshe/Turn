@@ -7,6 +7,8 @@ packages:
 
 allowBuilds:
   esbuild: true
+  unrs-resolver: false
+  sharp: false
 
 minimumReleaseAgeExclude:
   - '@vitest/mocker@5.0.2'

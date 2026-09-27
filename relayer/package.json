@@ -5,7 +5,11 @@
   "type": "module",
   "description": "Turn gasless relayer: sponsors EIP-7702 (type-4) transactions and submits user-signed TurnAccount batches.",
   "exports": {
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./app": "./src/app.ts",
+    "./config": "./src/config.ts",
+    "./store": "./src/store.ts",
+    "./submit": "./src/submit.ts"
   },
   "scripts": {
     "dev": "tsx watch --env-file=../.env src/index.ts",

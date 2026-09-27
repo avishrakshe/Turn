@@ -394,9 +394,28 @@ Invariants tested in Phase 2:
 - WSL currently only has the `docker-desktop` distro. **Ubuntu isn't installed yet.**
 
 ## 9. Still pending
-1. Agora bounty criteria: expected before Phase 5. Designing for AUSD settlement in a cross-border flow, kept adaptable.
-2. "One Passkey, Many Keys" criteria: expected before Phase 5. One account per user behind `TurnKeyring`.
+1. ~~Agora bounty criteria~~ → **decided 2026-09-27: skip the Agora bounty.** It requires trades on Perpl, which
+   conflicts with Track 2 ("not trading"). AUSD remains the settlement asset.
+2. ~~"One Passkey, Many Keys" criteria~~ → **decided 2026-09-27: pursue it** (design in §11).
 3. Team names and roles: use `TEAM_TBD` in docs until the docs phase.
+
+## 11. Phase 5 design: passkey namespaces (One Passkey, Many Keys)
+
+Verified against `@category-labs/mera` 0.2.0:
+- `getPasskeyPrfOutput({ rpId, credential?, prfSalt? })` works without stored credential metadata (discoverable
+  passkey), so a fresh device needs nothing but the passkey.
+- Each ceremony evaluates **one** 32-byte salt, and a different salt gives an unrelated output.
+
+| Namespace | Salt | Kind | Purpose |
+| --- | --- | --- | --- |
+| account | `sha256("turn.v1.account")` | derivation → BIP-39/BIP-44 `m/44'/60'/0'/0/0` | The EOA (EIP-7702 → TurnAccount). Exportable phrase |
+| vault | `sha256("turn.v1.vault")` | encryption (HKDF → AES-256-GCM) | Private address book and profile (names like "Mom", phone, notes). The server stores ciphertext only |
+| invite | `sha256("turn.v1.invite")` | derivation (HKDF(prf, circle address)) | Invite secrets rebuilt on any device; nothing stored |
+| notify | `sha256("turn.v1.notify")` | identity (Ed25519) | Proves ownership of a Telegram link without a wallet signature |
+
+Onboarding evaluates only the account salt (one Face ID). The other namespaces unlock when first needed, one Face
+ID each, and results are held in memory only. The stateless / cross-device e2e test clears storage, signs in with the
+same passkey, and checks that circles, balances, credit, the decrypted address book and invite links all come back.
 
 ## 10. Phase 2 implementation notes (decisions made while building)
 

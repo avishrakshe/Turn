@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/* Turn design tokens: warm, trustworthy, calm. Light is a warm cream; dark is a warm charcoal. */
+:root {
+  --bg: #fbf7f1;
+  --surface: #ffffff;
+  --surface-2: #f4ede3;
+  --ink: #1f1b16;
+  --muted: #6b6259;
+  --line: #e9e0d4;
+  --primary: #17594a;
+  --primary-ink: #ffffff;
+  --primary-soft: #e3f0ec;
+  --accent: #f2a541;
+  --accent-soft: #fdf0dc;
+  --good: #1f7a4d;
+  --warn: #b35c00;
+  --bad: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121110;
+    --surface: #1c1a18;
+    --surface-2: #26231f;
+    --ink: #f5efe6;
+    --muted: #a89d90;
+    --line: #34302b;
+    --primary: #3fb79d;
+    --primary-ink: #0b1f1a;
+    --primary-soft: #16302a;
+    --accent: #f2a541;
+    --accent-soft: #3a2a14;
+    --good: #58c28b;
+    --warn: #f0a34a;
+    --bad: #f07167;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-jakarta);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes turn-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.pop { animation: turn-pop 0.5s ease-out both; }
+
+@keyframes turn-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
+}
+.confetti-bit { position: fixed; top: 0; width: 8px; height: 12px; border-radius: 2px; animation: turn-fall 2.4s ease-in forwards; pointer-events: none; z-index: 50; }
+
+@keyframes turn-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.live-dot { animation: turn-pulse 1.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pop, .confetti-bit, .live-dot { animation: none; }
+}

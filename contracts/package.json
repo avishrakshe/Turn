@@ -6,7 +6,8 @@
   "description": "Turn contract ABIs and deployment addresses (generated from Foundry artifacts).",
   "exports": {
     "./abi": "./ts/abi.ts",
-    "./deployments": "./ts/deployments.ts"
+    "./deployments": "./ts/deployments.ts",
+    "./deployments/*.json": "./deployments/*.json"
   },
   "scripts": {
     "build": "forge build",
