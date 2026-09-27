@@ -1,39 +1,46 @@
 @import "tailwindcss";
 
-/* Turn design tokens: warm, trustworthy, calm. Light is a warm cream; dark is a warm charcoal. */
+/* Turn design tokens: warm, trustworthy, calm. Light is a warm cream; dark is a warm charcoal.
+   Emerald = money & action, marigold = celebration & attention. */
 :root {
-  --bg: #fbf7f1;
+  --bg: #faf6ef;
   --surface: #ffffff;
-  --surface-2: #f4ede3;
-  --ink: #1f1b16;
-  --muted: #6b6259;
-  --line: #e9e0d4;
+  --surface-2: #f3ece1;
+  --ink: #1d1a15;
+  --muted: #6e655b;
+  --line: #ebe2d5;
   --primary: #17594a;
+  --primary-deep: #0e3d33;
   --primary-ink: #ffffff;
-  --primary-soft: #e3f0ec;
+  --primary-soft: #e2efe9;
   --accent: #f2a541;
-  --accent-soft: #fdf0dc;
-  --good: #1f7a4d;
-  --warn: #b35c00;
+  --accent-soft: #fcefd9;
+  --good: #1c7a4b;
+  --good-soft: #e0f1e7;
+  --warn: #a95600;
   --bad: #b3261e;
+  --bad-soft: #fbe6e3;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121110;
-    --surface: #1c1a18;
-    --surface-2: #26231f;
-    --ink: #f5efe6;
-    --muted: #a89d90;
-    --line: #34302b;
+    --bg: #11100e;
+    --surface: #1b1916;
+    --surface-2: #252220;
+    --ink: #f6f0e6;
+    --muted: #a99e91;
+    --line: #332f2a;
     --primary: #3fb79d;
-    --primary-ink: #0b1f1a;
-    --primary-soft: #16302a;
+    --primary-deep: #2a8f79;
+    --primary-ink: #06201a;
+    --primary-soft: #15302a;
     --accent: #f2a541;
     --accent-soft: #3a2a14;
-    --good: #58c28b;
+    --good: #5cc790;
+    --good-soft: #15302a;
     --warn: #f0a34a;
     --bad: #f07167;
+    --bad-soft: #3a1a17;
   }
 }
 
@@ -45,13 +52,16 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
   --color-primary-ink: var(--primary-ink);
   --color-primary-soft: var(--primary-soft);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
   --font-sans: var(--font-jakarta);
 }
 
@@ -64,31 +74,118 @@ body {
 body {
   font-family: var(--font-jakarta), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
 }
 
 .num {
   font-variant-numeric: tabular-nums;
 }
 
+.font-display {
+  font-family: var(--font-display), var(--font-jakarta), system-ui, sans-serif;
+}
+
+/* ---- App frame: full-screen on phones, a phone on desktop ---- */
+.app-backdrop {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, var(--primary) 16%, transparent), transparent 60%),
+    radial-gradient(900px 500px at 110% 110%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 60%),
+    var(--bg);
+}
+@media (min-width: 768px) {
+  .app-frame {
+    box-shadow:
+      0 0 0 10px color-mix(in oklab, var(--ink) 92%, transparent),
+      0 40px 80px -20px rgba(0, 0, 0, 0.35);
+  }
+}
+.app-frame::-webkit-scrollbar { width: 0; }
+
+/* ---- Motion ---- */
 @keyframes turn-pop {
   0% { transform: scale(0.6); opacity: 0; }
-  60% { transform: scale(1.08); opacity: 1; }
+  60% { transform: scale(1.06); opacity: 1; }
   100% { transform: scale(1); }
 }
-.pop { animation: turn-pop 0.5s ease-out both; }
+.pop { animation: turn-pop 0.5s cubic-bezier(.2,.9,.3,1.2) both; }
+
+@keyframes turn-rise {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.rise { animation: turn-rise 0.45s cubic-bezier(.2,.8,.2,1) both; }
+.rise-2 { animation: turn-rise 0.45s 0.06s cubic-bezier(.2,.8,.2,1) both; }
+.rise-3 { animation: turn-rise 0.45s 0.12s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+.sheet-up { animation: sheet-up 0.32s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+.sheet-fade { animation: sheet-fade 0.25s ease-out both; }
+
+@keyframes toast-in { from { transform: translateY(-16px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.toast-in { animation: toast-in 0.3s cubic-bezier(.2,.9,.3,1.1) both; }
 
 @keyframes turn-fall {
   0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
 }
-.confetti-bit { position: fixed; top: 0; width: 8px; height: 12px; border-radius: 2px; animation: turn-fall 2.4s ease-in forwards; pointer-events: none; z-index: 50; }
+.confetti-bit { position: fixed; top: 0; width: 8px; height: 12px; border-radius: 2px; animation: turn-fall 2.4s ease-in forwards; pointer-events: none; z-index: 70; }
 
-@keyframes turn-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
+@keyframes turn-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 .live-dot { animation: turn-pulse 1.4s ease-in-out infinite; }
 
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin-slow 40s linear infinite; }
+
+@keyframes glow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 55%, transparent); } 50% { box-shadow: 0 0 0 10px transparent; } }
+.glow { animation: glow 2s ease-in-out infinite; }
+
+/* ---- Marketing site: always the night palette ---- */
+.site {
+  --bg: #06120f;
+  --surface: #0d1d19;
+  --surface-2: #132722;
+  --ink: #f3efe6;
+  --muted: #9bb0a8;
+  --line: #1d3630;
+  --primary: #3fb79d;
+  --primary-deep: #2a8f79;
+  --primary-ink: #04201a;
+  --primary-soft: #123029;
+  --accent-soft: #3a2a14;
+  --good: #5cc790;
+  --good-soft: #15302a;
+  --warn: #f0a34a;
+  background: var(--bg);
+  color: var(--ink);
+}
+.site-glow {
+  background:
+    radial-gradient(60% 50% at 70% 40%, rgba(63, 183, 157, 0.22), transparent 70%),
+    radial-gradient(40% 40% at 20% 80%, rgba(242, 165, 65, 0.12), transparent 70%);
+}
+.site-grid {
+  background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 80%);
+}
+.text-gradient {
+  background: linear-gradient(100deg, #3fb79d 10%, #f2a541 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee { animation: marquee 30s linear infinite; }
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: turn-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .pop, .confetti-bit, .live-dot { animation: none; }
+  .marquee, .reveal { animation: none; }
+  .pop, .rise, .rise-2, .rise-3, .sheet-up, .sheet-fade, .toast-in, .confetti-bit, .live-dot, .spin-slow, .glow { animation: none; }
 }

@@ -81,7 +81,8 @@ test.describe.serial("Turn", () => {
       void name;
     }
     await open(creator.page, circlePath);
-    await expect(creator.page.getByText("Round 1 of 3")).toBeVisible({ timeout: 60_000 });
+    // The circle is live. (The in-app keeper may already have moved it past round 1 by now.)
+    await expect(creator.page.getByText(/Round \d of 3/).first()).toBeVisible({ timeout: 60_000 });
   });
 
   test("encrypted names: set a name in the passkey vault", async () => {

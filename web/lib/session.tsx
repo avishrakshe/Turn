@@ -1,7 +1,11 @@
 "use client";
-// The passkey session. Everything lives in memory: a reload or a new device signs in again with Face ID and rebuilds
-// identity from the passkey, and everything else from the chain and the Envio indexer.
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+// The passkey session.
+// - The signing key lives in memory only. It is rebuilt from the passkey (Face ID) and zeroed on lock.
+// - The *public* address is remembered for this browser tab (sessionStorage), so a refresh shows your circles
+//   right away, read-only. The first action that needs a signature asks for Face ID once.
+// - A new device or a wiped browser needs nothing but the passkey: identity from the passkey; circles, money and
+//   history from the chain and the Envio indexer.
+import { createContext, useCallback, useContext, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Address, LocalAccount } from "viem";
 import { accountFromPrf, createPasskey, evaluate, mnemonicFromPrf, type AccountSession } from "./passkey";
 import { track } from "./metrics";
@@ -9,14 +13,19 @@ import { track } from "./metrics";
 type Unlocked = { vault?: Uint8Array<ArrayBuffer>; invite?: Uint8Array<ArrayBuffer> };
 
 type SessionState = {
+  /** Your address: from the live session, or remembered for this tab after a refresh. */
   address: Address | null;
+  /** The live signer, if unlocked in this page load. */
   account: LocalAccount<"mera"> | null;
+  /** Address known but no signer yet (after a refresh). */
+  locked: boolean;
   busy: boolean;
   create: (name: string) => Promise<LocalAccount<"mera">>;
   signIn: () => Promise<LocalAccount<"mera">>;
-  /** Fresh Face ID for sensitive actions (joining, big bids, withdrawals, auto-pay changes). */
+  /** The signer, asking for Face ID only if this page load doesn't have one yet. */
+  ensureAccount: () => Promise<LocalAccount<"mera">>;
+  /** Always asks for Face ID: joining, big bids, withdrawals, auto-pay changes. */
   confirm: () => Promise<LocalAccount<"mera">>;
-  /** Unlock another passkey namespace (one Face ID the first time, then kept in memory). */
   unlock: (ns: "vault" | "invite") => Promise<Uint8Array<ArrayBuffer>>;
   unlocked: (ns: "vault" | "invite") => boolean;
   exportPhrase: () => Promise<string>;
@@ -25,9 +34,32 @@ type SessionState = {
 
 const Ctx = createContext<SessionState | null>(null);
 
+// ---- remembered address (public, per tab) --------------------------------------------------------------------
+const ADDR_KEY = "turn.address";
+const listeners = new Set<() => void>();
+function readAddr(): Address | null {
+  try {
+    return (sessionStorage.getItem(ADDR_KEY) as Address | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+function writeAddr(a: Address | null) {
+  try {
+    if (a) sessionStorage.setItem(ADDR_KEY, a);
+    else sessionStorage.removeItem(ADDR_KEY);
+  } catch {}
+  listeners.forEach((l) => l());
+}
+const subscribe = (l: () => void) => {
+  listeners.add(l);
+  return () => listeners.delete(l);
+};
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<AccountSession | null>(null);
   const [busy, setBusy] = useState(false);
+  const remembered = useSyncExternalStore(subscribe, readAddr, () => null);
   const extra = useRef<Unlocked>({});
   const [, force] = useState(0);
 
@@ -38,6 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       prev?.session.end();
       return next;
     });
+    writeAddr(next.account.address);
     return next;
   }, []);
 
@@ -70,14 +103,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [adopt, withBusy],
   );
 
-  const confirm = useCallback(
-    () =>
-      withBusy(async () => {
-        const acct = adopt(await evaluate("account"));
-        return acct.account;
-      }),
-    [adopt, withBusy],
-  );
+  const confirm = useCallback(() => withBusy(async () => adopt(await evaluate("account")).account), [adopt, withBusy]);
+
+  const ensureAccount = useCallback(async () => (s ? s.account : signIn()), [s, signIn]);
 
   const unlock = useCallback(
     (ns: "vault" | "invite") =>
@@ -109,22 +137,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     extra.current.invite?.fill(0);
     extra.current = {};
     setS(null);
+    writeAddr(null);
   }, [s]);
 
+  const address = s?.account.address ?? remembered;
   const value = useMemo<SessionState>(
     () => ({
-      address: s?.account.address ?? null,
+      address,
       account: s?.account ?? null,
+      locked: !s && Boolean(address),
       busy,
       create,
       signIn,
+      ensureAccount,
       confirm,
       unlock,
       unlocked: (ns) => Boolean(extra.current[ns]),
       exportPhrase,
       signOut,
     }),
-    [s, busy, create, signIn, confirm, unlock, exportPhrase, signOut],
+    [address, s, busy, create, signIn, ensureAccount, confirm, unlock, exportPhrase, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -6,6 +6,7 @@ import { guessCurrency, type Rates } from "@/lib/money";
 import { myCircles } from "@/lib/indexer";
 import { startRun } from "@/lib/metrics";
 import { NamesProvider } from "./names";
+import { ToastProvider } from "./ui";
 
 type Prefs = { currency: string; setCurrency: (c: string) => void; rates: Rates };
 const noSubscribe = () => () => {};
@@ -46,7 +47,9 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={qc}>
       <SessionProvider>
         <PrefsProvider>
-          <NamesProvider>{children}</NamesProvider>
+          <NamesProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </NamesProvider>
         </PrefsProvider>
       </SessionProvider>
     </QueryClientProvider>

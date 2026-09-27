@@ -7,6 +7,7 @@ import { open, seal, type Sealed } from "@/lib/passkey";
 import { useSession } from "@/lib/session";
 import { vaultWriteMessage } from "@/lib/vault-message";
 import { shortAddr } from "@/lib/money";
+import { Icon } from "./icons";
 
 type Book = { people: Record<string, string>; circles: Record<string, string>; me?: string };
 const EMPTY: Book = { people: {}, circles: {} };
@@ -28,7 +29,7 @@ type NamesState = {
 const Ctx = createContext<NamesState | null>(null);
 
 export function NamesProvider({ children }: { children: ReactNode }) {
-  const { address, account, unlock: unlockNs } = useSession();
+  const { address, ensureAccount, unlock: unlockNs } = useSession();
   // The decrypted book belongs to one account; switching accounts (or locking) makes it invisible immediately.
   const [state, setState] = useState<{ owner: string; book: Book } | null>(null);
   const book = state && address && state.owner === address ? state.book : null;
@@ -40,10 +41,11 @@ export function NamesProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback(
     async (next: Book) => {
-      if (!address || !account || key.current?.owner !== address) return;
+      if (!address || key.current?.owner !== address) return;
       const sealed = await seal(key.current.prf, next);
       const timestamp = Math.floor(Date.now() / 1000);
-      // Signed by the account (no prompt: session is in memory) so only you can replace your vault.
+      // Signed by the account so only you can replace your vault (no prompt if the session is already open).
+      const account = await ensureAccount();
       const signature = await account.signMessage({ message: await vaultWriteMessage(sealed, timestamp) });
       await fetch(`/api/vault/${address}`, {
         method: "PUT",
@@ -51,7 +53,7 @@ export function NamesProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ sealed, timestamp, signature }),
       });
     },
-    [address, account],
+    [address, ensureAccount],
   );
 
   const unlock = useCallback(async () => {
@@ -118,16 +120,29 @@ export function useNames() {
 export function UnlockNames({ compact }: { compact?: boolean }) {
   const n = useNames();
   if (n.unlocked) return null;
+  if (compact)
+    return (
+      <button
+        onClick={() => void n.unlock()}
+        disabled={n.unlocking}
+        className="flex h-9 items-center gap-1.5 rounded-full bg-primary-soft px-3 text-xs font-bold text-primary transition active:scale-95"
+      >
+        <Icon name="lock" size={14} strokeWidth={2.4} />
+        {n.unlocking ? "Unlocking…" : "Show names"}
+      </button>
+    );
   return (
     <button
       onClick={() => void n.unlock()}
       disabled={n.unlocking}
-      className={`flex items-center gap-2 rounded-2xl border border-dashed border-line bg-surface px-4 py-3 text-left text-sm font-semibold text-primary ${compact ? "" : "w-full"}`}
+      className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary-soft/60 px-4 py-3 text-left transition active:scale-[0.99]"
     >
-      <span aria-hidden>🔒</span>
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-ink">
+        <Icon name="lock" size={18} />
+      </span>
       <span className="flex-1">
-        {n.unlocking ? "Unlocking…" : "Show names"}
-        {!compact && <span className="block text-xs font-medium text-muted">Names are end-to-end encrypted. Only your passkey can read them.</span>}
+        <span className="block text-sm font-bold text-primary">{n.unlocking ? "Unlocking…" : "Show names"}</span>
+        <span className="block text-xs text-muted">End-to-end encrypted. Only your passkey can read them.</span>
       </span>
     </button>
   );
