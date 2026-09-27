@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "web:dev": "pnpm --filter @turn/web dev",
-    "web:build": "pnpm --filter @turn/web build"
+    "site:dev": "pnpm --filter @turn/site dev",
+    "site:build": "pnpm --filter @turn/site build"
   }
 }

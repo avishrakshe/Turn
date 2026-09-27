@@ -33,7 +33,7 @@ This page lists what could go wrong, how we test for it, and what we haven't sol
 The invariants I0–I3 are defined on [Safety](/docs/safety#the-invariants).
 
 **Done:**
-- The circle economics are ported to TypeScript (`web/lib/economics`) and tested with Vitest:
+- The circle economics are ported to TypeScript (`site/lib/economics`) and tested with Vitest:
   - `plan.md`'s worked ejection example, to the unit
   - shared vectors for `TrustMath` and for auction scenarios
   - **400 randomized circles** (3–10 members, random amounts, bids, trust, reserve shares and missed payments), asserting I0, I1 and I3 after every step and I2 at the end

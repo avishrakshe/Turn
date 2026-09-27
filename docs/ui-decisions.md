@@ -17,7 +17,7 @@ and the animation shouldn't either.
 - Warm paper and warm ink, never pure white or black, so it reads as a family ledger rather than a trading screen.
 - Marigold is reserved for the primary action and the "your turn" moment, so the moment stays special.
 - Teal carries trust and money.
-- Every text/background pair is checked for WCAG AA in both themes by `pnpm --filter @turn/web contrast`,
+- Every text/background pair is checked for WCAG AA in both themes by `pnpm --filter @turn/site contrast`,
   which exits non-zero on any failure (it will be wired into CI in phase 5).
 
 **Type.**
@@ -52,7 +52,7 @@ inline. The phones are illustrations: `aria-hidden` and `inert`, so the text car
 keyboard users never tab into a fake app.
 
 **The simulation runs the real rules.**
-- "Run a circle in 30 seconds" runs `web/lib/economics`, a TypeScript port of the circle economics in
+- "Run a circle in 30 seconds" runs `site/lib/economics`, a TypeScript port of the circle economics in
   `plan.md` §3.3–3.4.
 - The port is checked against `plan.md`'s worked ejection example and against 400 randomized circles,
   asserting the invariants after every step.

@@ -1,5 +1,5 @@
 // Checks WCAG 2.2 contrast for every text/background pair the design system uses,
-// in both themes. Exits non-zero if any pair fails. Run: pnpm --filter @turn/web contrast
+// in both themes. Exits non-zero if any pair fails. Run: pnpm --filter @turn/site contrast
 import { readFileSync } from "node:fs";
 
 const css = readFileSync(new URL("../styles/tokens.css", import.meta.url), "utf8");

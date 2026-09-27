@@ -1,5 +1,5 @@
 {
-  "_comment": "Shared test vectors for the TS economics port (web/lib/economics) and the Solidity contracts (contracts/test). Amounts are integer token units. Both implementations must produce these exact numbers.",
+  "_comment": "Shared test vectors for the TS economics port (site/lib/economics) and the Solidity contracts (contracts/test). Amounts are integer token units. Both implementations must produce these exact numbers.",
   "score": [
     { "name": "no history", "record": { "circlesJoined": 0, "circlesCompleted": 0, "paymentsOnTime": 0, "paymentsLate": 0, "defaults": 0 }, "score": 0, "trustBps": 0 },
     { "name": "first circle, all on time, not finished", "record": { "circlesJoined": 1, "circlesCompleted": 0, "paymentsOnTime": 3, "paymentsLate": 0, "defaults": 0 }, "score": 400, "trustBps": 0 },

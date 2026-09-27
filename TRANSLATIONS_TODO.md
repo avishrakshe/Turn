@@ -5,7 +5,7 @@ speaker yet. Please review each one, fix it in place, and tick it off. Keep amou
 In the Urdu strings, amounts are wrapped in invisible left-to-right isolate marks (U+2066/U+2069);
 leave those in place.
 
-## App UI (`web/lib/i18n/{hi,ml,ta,ur}.ts`)
+## App UI (`site/lib/i18n/{hi,ml,ta,ur}.ts`)
 
 Every string in the app, one file per language, laid out exactly like `en.ts`. Easiest to review
 side by side with `en.ts`, or in the app itself: Settings → Language.
@@ -17,12 +17,12 @@ side by side with `en.ts`, or in the app itself: Settings → Language.
   marks are needed in the catalog.
 - Word choice for the circle itself: कमेटी (hi), ചിട്ടി (ml), சீட்டு (ta), کمیٹی (ur).
 
-- [ ] **Hindi (hi)**: `web/lib/i18n/hi.ts`
-- [ ] **Malayalam (ml)**: `web/lib/i18n/ml.ts`
-- [ ] **Tamil (ta)**: `web/lib/i18n/ta.ts`
-- [ ] **Urdu (ur), RTL**: `web/lib/i18n/ur.ts`
+- [ ] **Hindi (hi)**: `site/lib/i18n/hi.ts`
+- [ ] **Malayalam (ml)**: `site/lib/i18n/ml.ts`
+- [ ] **Tamil (ta)**: `site/lib/i18n/ta.ts`
+- [ ] **Urdu (ur), RTL**: `site/lib/i18n/ur.ts`
 
-## Landing page: reminder previews (`web/components/marketing/Languages.tsx`)
+## Landing page: reminder previews (`site/components/marketing/Languages.tsx`)
 
 English source: "Reminder: your ₹5,000 for Family Circle goes out automatically tomorrow. This month the pot goes to Fatima."
 
@@ -31,7 +31,7 @@ English source: "Reminder: your ₹5,000 for Family Circle goes out automaticall
 - [ ] **Tamil (ta):** நினைவூட்டல்: ஃபேமிலி சர்க்கிளுக்கான உங்கள் ₹5,000 நாளை தானாகச் செலுத்தப்படும். இந்த மாதத் தொகை ஃபாத்திமாவுக்குக் கிடைக்கும்.
 - [ ] **Urdu (ur), AED, RTL:** یاد دہانی: فیملی سرکل کے لیے آپ کے AED 220 کل خود بخود ادا ہو جائیں گے۔ اس مہینے کی رقم فاطمہ کو ملے گی۔
 
-## Design system specimens (`web/app/design/page.tsx`)
+## Design system specimens (`site/app/design/page.tsx`)
 
 Type specimens only, not shown to users. Review is still welcome.
 
