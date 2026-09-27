@@ -1,0 +1,51 @@
+{
+  "_comment": "Shared test vectors for the TS economics port (web/lib/economics) and the Solidity contracts (contracts/test). Amounts are integer token units. Both implementations must produce these exact numbers.",
+  "score": [
+    { "name": "no history", "record": { "circlesJoined": 0, "circlesCompleted": 0, "paymentsOnTime": 0, "paymentsLate": 0, "defaults": 0 }, "score": 0, "trustBps": 0 },
+    { "name": "first circle, all on time, not finished", "record": { "circlesJoined": 1, "circlesCompleted": 0, "paymentsOnTime": 3, "paymentsLate": 0, "defaults": 0 }, "score": 400, "trustBps": 0 },
+    { "name": "3 circles, 100% on time", "record": { "circlesJoined": 3, "circlesCompleted": 3, "paymentsOnTime": 15, "paymentsLate": 0, "defaults": 0 }, "score": 850, "trustBps": 6800 },
+    { "name": "5 circles, 100% on time (capped)", "record": { "circlesJoined": 5, "circlesCompleted": 5, "paymentsOnTime": 30, "paymentsLate": 0, "defaults": 0 }, "score": 1000, "trustBps": 8000 },
+    { "name": "2 circles, 2 late of 10", "record": { "circlesJoined": 2, "circlesCompleted": 2, "paymentsOnTime": 8, "paymentsLate": 2, "defaults": 0 }, "score": 620, "trustBps": 4960 },
+    { "name": "1 circle with a default", "record": { "circlesJoined": 1, "circlesCompleted": 1, "paymentsOnTime": 4, "paymentsLate": 0, "defaults": 1 }, "score": 270, "trustBps": 2160 }
+  ],
+  "scenarios": [
+    {
+      "name": "plan §3.4 worked example: E misses rounds 2 and 3 and is ejected",
+      "params": { "contribution": 100, "mode": "FIXED_ORDER", "maxDiscountBps": 0, "entryDeposit": 100, "reserveBps": 2000 },
+      "members": ["W1", "W2", "W3", "W4", "E"],
+      "periods": [
+        { "missed": [] },
+        { "missed": ["E"] },
+        { "missed": ["E"] },
+        { "missed": [] },
+        { "missed": [] }
+      ],
+      "expect": {
+        "winners": { "1": "W1", "2": "W2", "3": "W3", "4": "W4" },
+        "pots": { "1": 500, "2": 500, "3": 400, "4": 400 },
+        "net": { "W1": 5, "W2": 5, "W3": 5, "W4": 5, "E": -20 },
+        "netBeforeReserveSplit": { "W1": 0, "W2": 0, "W3": 0, "W4": 0, "E": -20 },
+        "ejected": { "E": { "k": 2, "refund": 180, "penalty": 20 } },
+        "finalBalance": 0
+      }
+    },
+    {
+      "name": "auction discount shared as credit, 20% to the reserve",
+      "params": { "contribution": 1000, "mode": "AUCTION", "maxDiscountBps": 5000, "entryDeposit": 1000, "reserveBps": 2000 },
+      "members": ["A", "B", "C", "D"],
+      "periods": [
+        { "bids": { "B": 1000 }, "missed": [] },
+        { "missed": [] },
+        { "missed": [] },
+        { "missed": [] }
+      ],
+      "expect": {
+        "winners": { "1": "B", "2": "A", "3": "C", "4": "D" },
+        "pots": { "1": 4000, "2": 4000, "3": 4000, "4": 4000 },
+        "round1": { "discount": 400, "toReserve": 80, "creditEach": 106, "withheld": 2000, "netPaid": 1600 },
+        "net": { "A": 126, "B": -380, "C": 126, "D": 126 },
+        "finalBalance": 2
+      }
+    }
+  ]
+}

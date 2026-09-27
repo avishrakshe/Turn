@@ -1,0 +1,16 @@
+/* A short bright dash travelling along each route. */
+.flow {
+  stroke-dasharray: 40 1000;
+  stroke-dashoffset: 40;
+  animation: travel 3.2s var(--ease-out) infinite;
+}
+
+@keyframes travel {
+  from { stroke-dashoffset: 40; opacity: 1; }
+  85% { opacity: 1; }
+  to { stroke-dashoffset: -560; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow { animation: none; stroke-dasharray: none; opacity: 0.6; }
+}
