@@ -6,10 +6,13 @@ import {
   commitBid,
   createCircle,
   eligibleMembers,
+  expectedRound,
   exposure,
   maxBidBps,
   type Mode,
   netOf,
+  swapTurns,
+  withheldIfWinningIn,
 } from "./engine";
 import { score, trustBps } from "./trust";
 import vectors from "./vectors.json";
@@ -143,6 +146,34 @@ describe("trusted winner defaults are covered by the reserve", () => {
     r = advance(r.circle, { missed: ["T"] });
     expect(r.events.find((e) => e.type === "DefaultMarked")).toMatchObject({ member: "T", fromCollateral: 0n, fromReserve: 1000n });
     expect(r.events.find((e) => e.type === "PayoutMade")).toMatchObject({ pot: 4000n });
+  });
+});
+
+describe("swapping turns", () => {
+  const fixed = () =>
+    createCircle(
+      { contribution: 100n, mode: "FIXED_ORDER", maxDiscountBps: 0, entryDeposit: 100n, reserveBps: 2000 },
+      ["A", "B", "C", "D"].map((id) => ({ id, name: id })),
+    );
+
+  it("exchanges the two members' rounds and the collateral that goes with them", () => {
+    let c = fixed();
+    expect(expectedRound(c, "B")).toBe(2);
+    expect(expectedRound(c, "D")).toBe(4);
+    expect(withheldIfWinningIn(c, "D", 2)).toBe(100n); // owes 2 more rounds, deposit covers 1
+    c = swapTurns(c, "B", "D");
+    expect(expectedRound(c, "D")).toBe(2);
+    expect(expectedRound(c, "B")).toBe(4);
+    c = advance(c).circle; // A
+    const r2 = advance(c).events.find((e) => e.type === "PayoutMade")!;
+    expect(r2).toMatchObject({ winner: "D", collateralWithheld: 100n });
+  });
+
+  it("refuses swaps with a member who already had their turn, or in auction circles", () => {
+    const c = advance(fixed()).circle;
+    expect(() => swapTurns(c, "A", "B")).toThrow();
+    const auction = createCircle({ ...fixed().params, mode: "AUCTION" }, ["A", "B", "C"].map((id) => ({ id, name: id })));
+    expect(() => swapTurns(auction, "A", "B")).toThrow();
   });
 });
 

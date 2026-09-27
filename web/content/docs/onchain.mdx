@@ -1,0 +1,124 @@
+<PlainWords>
+
+Turn only puts on the blockchain what has to be trusted: the money, the rules that move it, and the record of who paid. Everything else, like names, reminders and exchange rates, stays off the chain.
+
+Each time you do something with money, your phone signs a precise instruction with your face or fingerprint. Turn passes it to the blockchain and pays the small network fee. Monthly payments and payouts happen without you signing anything, because the rules you agreed to when joining allow exactly those and nothing more.
+
+This page lists every one of those steps.
+
+</PlainWords>
+
+<UnderTheHood />
+
+## What's on the chain, and what isn't
+
+| On-chain (public, permanent) | Off-chain (and why) |
+| --- | --- |
+| AUSD balances and every transfer | **Your passkey.** It stays in your phone's secure hardware or your platform's passkey sync. |
+| Each circle's rules (`Params`), members, round, pot, reserve and exposure | **Names** of circles and members. Public forever is the wrong default for family names, so they're kept by the relayer, keyed by the invite hash. |
+| Sealed bid **hashes**, then revealed discounts | **FX rates.** Display only, and never used to settle. |
+| Payments, payouts, defaults, ejections, credit, claims (as events) | **Telegram chat IDs** and language, used to send reminders. |
+| Each member's display currency (`MemberProfileSet`) | **The indexer's database.** It's derived from events and can be rebuilt from the chain at any time. |
+| Auto-pay grants (`PullGrant`) and EIP-7702 delegation | **Relayer bookkeeping**: rate limits, gas caps, the queue. |
+| Turn Score records (`CreditRegistry`) | **The homepage simulation.** It runs in your browser, with no chain involved. |
+
+The rule: if losing it or faking it could cost a member money, it's on-chain. If publishing it would cost a member privacy, it's off-chain.
+
+## Every action, as a transaction
+
+"User batch" means an EIP-712 `Batch(calls, nonce, deadline)` signed by the member's passkey-derived key, then submitted by the relayer, which pays the gas, to `TurnAccount.execute` on the member's own address.
+
+| Action | Face ID | Signed by | Sent by and paid by | Calls | Events |
+| --- | --- | --- | --- | --- | --- |
+| **First action ever** | 1 prompt | Member: EIP-7702 authorization + user batch | Relayer, **type-4** tx | delegates the EOA to `TurnAccount`, then the batch below | `Executed` |
+| **Create a circle** | 1 prompt | Member (user batch) | Relayer | `AUSD.approve` → `CircleFactory.createCircle` → `Circle.join` → `TurnAccount.grantPull` | `Approval`, `CircleCreated`, `Joined`, `PullGranted` |
+| **Join a circle** | 1 prompt | Member (user batch) | Relayer | `AUSD.approve` → `Circle.join(secret, ccy)` → `grantPull` | `Approval`, `Joined`, `Transfer` (deposit), `PullGranted`, `CircleStarted` when the last seat fills |
+| **Monthly payment** | **None** | Nobody: the grant allows it | Keeper (CRE → `TurnKeeper`) | `Circle.collect` → `TurnAccount.pullContribution` → `AUSD.transfer` | `Pulled`, `Transfer`, `ContributionPaid` (or `ContributionFailed`) |
+| **Seal a bid** | None if ≤ 10%, otherwise 1 | Member (in-memory session) | Relayer | `Circle.commitBid(hash)` | `BidCommitted` |
+| **Reveal a bid** | None | Member (session) | Relayer | `Circle.revealBid(bps, salt)` | `BidRevealed` |
+| **Close bidding** | — | Anyone | Keeper | `Circle.closeAuction` | `AuctionClosed` |
+| **Payout** | — | Anyone | Keeper | `Circle.payout` → `AUSD.transfer` to the winner | `PayoutMade`, `CreditAccrued` × n, `ReserveChanged`, `CollateralReleased` |
+| **Missed payment covered** | — | Anyone, after grace | Keeper | `Circle.markDefault(member, round)` | `DefaultMarked` (or `MemberEjected` + `RepaymentOwed`) |
+| **Swap turns** | 1 each | Both members, separately | Relayer | `Circle.proposeSwap(other)`, then `Circle.acceptSwap(proposer)` | `SwapProposed`, `TurnsSwapped` |
+| **Change display currency** | None | Member (session) | Relayer | `Circle.setDisplayCurrency(ccy)` | `MemberProfileSet` |
+| **Turn auto-pay off or on** | 1 prompt | Member | Relayer | `TurnAccount.revokePull` / `grantPull` | `PullRevoked` / `PullGranted` |
+| **Claim at the end** | 1 prompt | Member | Relayer | `Circle.claim` | `Claimed`, `Transfer` |
+| **Turn Score update** | — | (inside the calls above) | — | `CreditRegistry.onPayment` / `onDefault` / `onCompleted` | `RecordUpdated` |
+
+<Callout title="Additions to the first plan">
+
+Two rows extend `docs/plan.md` §5 and will be added to the contract interface:
+- **Sealed bids** (`commitBid` / `revealBid`) replace `bid`. See [Bidding](/docs/bidding).
+- **Swapping turns** (`proposeSwap` / `acceptSwap`, fixed-order circles only, before either member has won) is new. Collateral follows the seat: whoever moves earlier will have more held back at payout, and the app shows both amounts before either person confirms.
+
+</Callout>
+
+## One month, end to end
+
+<Mermaid
+  title="One month of a circle, onchain"
+  chart={`
+sequenceDiagram
+  participant K as Keeper (CRE)
+  participant C as Circle
+  participant A as Member accounts
+  participant T as AUSD
+  participant R as CreditRegistry
+  K->>C: collect()
+  C->>A: pullContribution(round, C)
+  A->>T: transfer(circle, C)
+  C->>R: onPayment(member, C, onTime)
+  Note over C: bid window, then reveal window
+  A->>C: commitBid / revealBid (via relayer)
+  K->>C: closeAuction()
+  K->>C: payout()
+  C->>T: transfer(winner, netPaid)
+  Note over C: credit to others, slice to reserve,<br/>collateral withheld
+`}
+/>
+
+## Anatomy of a user transaction
+
+```ts title="What the member's key signs (EIP-712)"
+const domain = { name: "TurnAccount", version: "1", chainId: 10143, verifyingContract: memberAddress };
+const types = {
+  Call:  [{ name: "target", type: "address" }, { name: "data", type: "bytes" }],
+  Batch: [{ name: "calls", type: "Call[]" }, { name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" }],
+};
+// value is always 0, so a batch can never move MON.
+```
+
+1. The app builds the calls and asks mera for one signature. On the first action it also signs an **EIP-7702 authorization** `(chainId, TurnAccount, nonce)`.
+2. The relayer checks the targets against its allowlist, estimates gas, adds 10%, applies the per-call-type and per-account caps, and submits the transaction: **type-4** if it carries an authorization, **type-2** otherwise.
+3. `TurnAccount.execute` checks the signature against its own address, the nonce and the deadline, and runs the calls. It checks the target allowlist again.
+4. The app waits for the receipt, about a second on Monad, then shows **Confirmed**. The transaction hash sits behind a "Details" disclosure, never on the main screen.
+
+## Reads: chain or indexer?
+
+| The app needs | Reads from | Why |
+| --- | --- | --- |
+| Balance, and "can I pay?" before any money action | Chain (`balanceOf`, circle views) | Must be exact at that moment |
+| Current round, who has paid, the bid window | Chain views, with the indexer as a fast first paint | Drives buttons that move money |
+| History, timeline, circle health, stats | Envio indexer | Aggregates across many events |
+| Turn Score | Indexer, with `score()` on-chain as the proof | Speed, plus verifiability |
+
+## Monad facts this design depends on
+
+| Fact | How Turn uses it |
+| --- | --- |
+| Chain IDs **143** (mainnet) and **10143** (testnet) | In every EIP-712 domain and deployment file |
+| Gas is charged on the **gas limit**: `value + gas_bid × gas_limit` | The relayer keeps limits tight (estimate + 10%, with caps) |
+| **No public mempool** | No front-running of payments. Bids are sealed anyway. |
+| ~1 s to finality | Optimistic UI, then "Confirmed", with no long spinners |
+| EIP-7702: a delegated EOA can't take its MON balance **below 10 MON** | Members hold 0 MON, and `TurnAccount` rejects `value > 0`, so this rule never fires |
+| EIP-7702: `CREATE` reverts in a delegated context | `TurnAccount` never creates contracts. The factory does. |
+| Full nodes don't serve **arbitrary historic state** | All history comes from events through the indexer |
+| 128 KB max contract size | Circles are EIP-1167 clones of one implementation |
+| P-256 precompile at `0x0100` | **Not used.** mera derives a secp256k1 key from the passkey, so signatures are standard ECDSA. |
+
+## Units
+
+- **Money:** AUSD base units, 6 decimals. ₹5,000 is converted once when a circle is created, for example to `60_000_000` (60 AUSD), and every contribution in that circle is exactly that many units.
+- **Shares:** basis points. 10 000 bps = 100%. Discounts, the reserve share and trust are all in bps.
+- **Time:** `block.timestamp` seconds. Periods, bid windows and grace periods never depend on block counts.
+- **Rounding:** always in favour of the circle. Collateral rounds up. Dust from splitting credit goes to the reserve.

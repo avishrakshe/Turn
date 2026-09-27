@@ -50,6 +50,8 @@ event ReserveChanged(uint256 balance, uint256 totalExposure);
 event CircleCompleted(uint256 reserveDistributed);
 event Claimed(address indexed member, uint256 amount);
 event MemberProfileSet(address indexed member, bytes3 displayCurrency);
+event SwapProposed(address indexed proposer, address indexed other);   // fixed-order circles
+event TurnsSwapped(address indexed a, address indexed b, uint256 roundA, uint256 roundB);
 ```
 
 ```solidity title="Factory, registry and account events"
@@ -64,7 +66,7 @@ event Pulled(address indexed circle, uint256 indexed round, uint256 amount);
 
 <Callout title="Changed from the first plan">
 
-`docs/plan.md` first described open bids (`bid(uint16)` with a `BidPlaced` event). Turn now uses sealed commit–reveal bids (see [Bidding](/docs/bidding)), so `commitBid(bytes32)` and `revealBid(uint16, bytes32)` replace `bid`, and `BidCommitted` and `BidRevealed` replace `BidPlaced`.
+`docs/plan.md` first described open bids (`bid(uint16)` with a `BidPlaced` event). Turn now uses sealed commit–reveal bids (see [Bidding](/docs/bidding)), so `commitBid(bytes32)` and `revealBid(uint16, bytes32)` replace `bid`, and `BidCommitted` and `BidRevealed` replace `BidPlaced`. Swapping turns (`proposeSwap(address)` and `acceptSwap(address)`, with `SwapProposed` and `TurnsSwapped`) is also new. See [Onchain, precisely](/docs/onchain#every-action-as-a-transaction).
 
 </Callout>
 

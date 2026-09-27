@@ -25,6 +25,8 @@ export interface TurnRingProps {
   showStatus?: boolean;
   /** Accessible summary. Defaults to "<name>'s turn". */
   label?: string;
+  /** Hide the marker when nobody's turn is decided yet (e.g. before the first auction). */
+  marker?: boolean;
   className?: string;
 }
 
@@ -34,7 +36,7 @@ const R = 150;
 
 const statusLabel: Record<SeatStatus, string> = { paid: "paid", pending: "not paid yet", late: "late" };
 
-export function TurnRing({ members, step, center, potFlow, showStatus, label, className }: TurnRingProps) {
+export function TurnRing({ members, step, center, potFlow, showStatus, label, marker = true, className }: TurnRingProps) {
   const n = Math.max(members.length, 1);
   const seat = ((step % n) + n) % n;
   const slice = 360 / n;
@@ -45,7 +47,8 @@ export function TurnRing({ members, step, center, potFlow, showStatus, label, cl
 
   const summary =
     label ??
-    `Savings circle with ${members.length} members. It's ${current?.name ?? "nobody"}'s turn.` +
+    `Savings circle with ${members.length} members.` +
+      (marker ? ` It's ${current?.name ?? "nobody"}'s turn.` : "") +
       (showStatus
         ? " " + members.map((m) => `${m.name}: ${statusLabel[m.status ?? "pending"]}`).join(", ") + "."
         : "");
@@ -57,7 +60,7 @@ export function TurnRing({ members, step, center, potFlow, showStatus, label, cl
         <circle cx={C} cy={C} r={R} fill="none" stroke="var(--line-strong)" strokeWidth={1.5} strokeDasharray="2 7" strokeLinecap="round" />
 
         {/* Marker: rotates as a whole so it glides along the track between seats. */}
-        <g className={styles.marker} style={{ transform: `rotate(${step * slice}deg)` }} aria-hidden>
+        <g className={styles.marker} style={{ transform: `rotate(${step * slice}deg)`, opacity: marker ? 1 : 0 }} aria-hidden>
           <path
             d={arcPath(C, C, R, -slice * 0.62, -avatarR * 0.9 * (180 / (Math.PI * R)))}
             fill="none"
@@ -75,7 +78,7 @@ export function TurnRing({ members, step, center, potFlow, showStatus, label, cl
         {members.map((m, i) => {
           const p = polar(C, C, R, i * slice);
           const tone = avatarTone(m.name);
-          const active = i === seat;
+          const active = marker && i === seat;
           const dot = polar(p.x, p.y, avatarR * 0.92, 135);
           return (
             <g key={`${m.name}-${i}`} className={cn(styles.seat, active && styles.seatActive)} style={{ transformOrigin: `${p.x}px ${p.y}px` }} aria-hidden>

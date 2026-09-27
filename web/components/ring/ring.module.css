@@ -1,7 +1,9 @@
 .marker {
   transform-box: view-box;
   transform-origin: 50% 50%;
-  transition: transform var(--duration-ring) var(--ease-spring);
+  transition:
+    transform var(--duration-ring) var(--ease-spring),
+    opacity var(--duration-base) var(--ease-out);
 }
 
 .halo {

@@ -98,6 +98,48 @@ rather than shrink to unreadable text. Each one has a "Diagram as text" fallback
 animate for a moment, and Mermaid measured stale layout, blowing diagrams up to 7× their size. It's now
 `0s`, which fixes the whole site, not just diagrams.
 
+**Onchain, precisely.** A dedicated page (`/docs/onchain`) lists what is and isn't on the chain and
+why. It covers every user action as a transaction (Face ID, signer, submitter and payer, contract calls,
+events), a month end to end, the anatomy of a signed batch, and which Monad facts the design leans on.
+It's the page to hand a judge who asks "what does the blockchain actually do here?".
+
 **Search without a service.** A static JSON index (one entry per section) is built at build time and
 fetched only when search opens (`/` or Ctrl/⌘ K). The search is keyboard-first, with results that
 jump straight to the right heading.
+
+## Phase 4 — App
+
+**Built against one store, running in demo mode for now.** The contracts, relayer and indexer don't
+exist yet, so every screen reads and writes through `lib/app/store.ts`. Today that store runs the
+tested economics engine in the browser. The live version swaps in chain reads and relayer writes behind
+the same actions. Every screen says "Demo" in the header, a line under it says "No real money, nothing
+on-chain yet", and Face ID prompts say "Demo: no passkey is created".
+
+**Onboarding counts taps.** Joining by invite is two taps and one Face ID prompt: "Join with Face ID",
+then "Use Face ID". Language and currency are pre-filled on the first screen (currency from the time
+zone), and each is one tap to change. `/metrics` shows the measured time and taps from first opening
+the app to the first confirmation.
+
+**One primary action per screen.**
+- A circle that's forming offers "Share invite".
+- An auction circle offers "Bid for this month's pot".
+- A fixed-order circle offers "Swap turns".
+- Everything else is information: next payment, what's held for your safety and when it comes back,
+  and credit off your next payment.
+
+**Money actions say what happens next, then give a receipt.**
+- Before confirming: "You pay a ₹5,000 deposit now. It covers you if you ever miss a month, and comes back at the end."
+- After: "Confirmed · …", with the transaction behind "Details", never on the main screen.
+- The bid sheet shows exactly what a win pays out now, what's held back, and what each other member gets.
+- The swap sheet shows how the held-back amount changes before either person agrees, because collateral follows the seat.
+
+**The reveal is a moment.** When bidding closes, sealed bids open one by one, then the winner. The one
+celebration (confetti and a bloom) is for "your turn". Missed payments are shown calmly: "Meera missed a
+payment. Their joining deposit covered it. You're not affected."
+
+**The ring never lies.** In auction circles, nobody's turn is decided while bidding is open, so the ring
+shows no marker. In fixed-order circles it marks whose turn it is. The marker only moves forward.
+
+**Translation-ready from the first line.** Every app string lives in `lib/i18n/en.ts`, with plurals and
+interpolation. Phase 5 adds the other languages as files, and RTL is already wired: the app sets
+`lang` and `dir` on the document.

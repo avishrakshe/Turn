@@ -17,6 +17,7 @@ export const DOC_GROUPS: DocGroup[] = [
     title: "Start here",
     pages: [
       { slug: "", title: "Overview", description: "What Turn is, and why it uses a blockchain at all." },
+      { slug: "onchain", title: "Onchain, precisely", description: "Exactly which steps touch the blockchain, who signs and pays for each, and what gets recorded." },
       { slug: "accounts", title: "Accounts & passkeys", description: "Face ID accounts, gasless payments, and exactly what auto-pay may do." },
       { slug: "money", title: "Money", description: "Why the pot is held in a dollar stablecoin, and how your own currency fits in." },
     ],

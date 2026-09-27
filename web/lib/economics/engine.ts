@@ -179,6 +179,42 @@ export function commitBid(c: Circle, id: string, bps: number): Circle {
   return { ...c, bids: { ...c.bids, [id]: bps } };
 }
 
+/**
+ * Fixed-order circles: the round a member who hasn't won yet will receive the pot, assuming
+ * nobody is ejected. Returns null for winners, ejected members and auction circles.
+ */
+export function expectedRound(c: Circle, id: string): number | null {
+  if (c.params.mode !== "FIXED_ORDER" || c.status !== "ACTIVE") return null;
+  const queue = eligibleMembers(c).sort((a, b) => a.joinIndex - b.joinIndex);
+  const i = queue.findIndex((m) => m.id === id);
+  return i < 0 ? null : c.round + i;
+}
+
+/** Collateral that would be withheld from a member's payout if they won in `round`. */
+export function withheldIfWinningIn(c: Circle, id: string, round: number): bigint {
+  const m = c.members.find((x) => x.id === id);
+  if (!m) return 0n;
+  const owed = BigInt(Math.max(0, c.totalRounds - round)) * c.params.contribution + m.repaymentOwed;
+  return max(0n, owed - m.deposit);
+}
+
+/**
+ * Swap two members' places in a fixed-order circle. Both must be active and not have won yet.
+ * On-chain this is proposeSwap + acceptSwap, each signed by one of the two members.
+ */
+export function swapTurns(c: Circle, a: string, b: string): Circle {
+  assert(c.params.mode === "FIXED_ORDER", "only fixed-order circles have turns to swap");
+  assert(c.status === "ACTIVE", "circle is not running");
+  assert(a !== b, "pick another member");
+  const next = structuredClone(c);
+  const ma = next.members.find((m) => m.id === a);
+  const mb = next.members.find((m) => m.id === b);
+  assert(!!ma && !!mb && !ma.ejected && !mb.ejected, "both must be active members");
+  assert(ma.wonRound === null && mb.wonRound === null, "both must still be waiting for their turn");
+  [ma.joinIndex, mb.joinIndex] = [mb.joinIndex, ma.joinIndex];
+  return next;
+}
+
 export interface AdvanceOptions {
   /** Members who don't pay this period. */
   missed?: readonly string[];

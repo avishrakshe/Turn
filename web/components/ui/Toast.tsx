@@ -35,7 +35,8 @@ const accent: Record<Tone, string> = {
 
 let nextId = 1;
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+/** `regionClassName` lets a screen lift toasts above fixed UI such as a tab bar. */
+export function ToastProvider({ children, regionClassName }: { children: ReactNode; regionClassName?: string }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
   const dismiss = useCallback((id: number) => setItems((xs) => xs.filter((x) => x.id !== id)), []);
@@ -58,7 +59,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         role="region"
         aria-label="Notifications"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-end"
+        className={cn(
+          "pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-end",
+          regionClassName,
+        )}
       >
         <ol className="contents" aria-live="polite">
           {items.map((t) => (

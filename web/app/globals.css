@@ -117,6 +117,21 @@
   }
 }
 
+/* App motion: the Face ID scan line, and the "your turn" celebration. */
+@keyframes scan {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(40px); }
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 105vh, 0) rotate(var(--spin, 540deg)); opacity: 0.9; }
+}
+@keyframes bloom {
+  0% { transform: scale(0.6); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
 /* Long-form docs typography. Components opt out with .not-prose. */
 @layer components {
   .docs-prose { font-size: 1.0625rem; line-height: 1.7; }
@@ -139,6 +154,8 @@
   .docs-prose th { text-align: start; font-weight: 600; background: var(--paper-sunk); }
   .docs-prose :where(th, td) { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
   .docs-prose tr:last-child td { border-bottom: 0; }
+  /* Keep identifiers whole in tables; the table scrolls sideways on narrow screens instead. */
+  .docs-prose :where(td, th) code { overflow-wrap: normal; white-space: nowrap; }
 
   /* Code blocks (rehype-pretty-code, dual theme) */
   .docs-prose figure[data-rehype-pretty-code-figure] { margin-top: 1.25rem; }
