@@ -1,7 +1,7 @@
 "use client";
 // Private address book, encrypted with the passkey's "vault" namespace (AES-256-GCM). The server stores ciphertext
 // only; any device with the same passkey decrypts it. Names never touch the chain or the indexer.
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { getAddress, type Address } from "viem";
 import { open, seal, type Sealed } from "@/lib/passkey";
 import { useSession } from "@/lib/session";
@@ -29,21 +29,19 @@ const Ctx = createContext<NamesState | null>(null);
 
 export function NamesProvider({ children }: { children: ReactNode }) {
   const { address, account, unlock: unlockNs } = useSession();
-  const [book, setBook] = useState<Book | null>(null);
+  // The decrypted book belongs to one account; switching accounts (or locking) makes it invisible immediately.
+  const [state, setState] = useState<{ owner: string; book: Book } | null>(null);
+  const book = state && address && state.owner === address ? state.book : null;
+  const setBook = useCallback((b: Book) => address && setState({ owner: address, book: b }), [address]);
   const [unlocking, setUnlocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const key = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const key = useRef<{ owner: string; prf: Uint8Array<ArrayBuffer> } | null>(null);
   const pending = useRef<Record<string, string>>({});
-
-  useEffect(() => {
-    setBook(null);
-    key.current = null;
-  }, [address]);
 
   const persist = useCallback(
     async (next: Book) => {
-      if (!address || !account || !key.current) return;
-      const sealed = await seal(key.current, next);
+      if (!address || !account || key.current?.owner !== address) return;
+      const sealed = await seal(key.current.prf, next);
       const timestamp = Math.floor(Date.now() / 1000);
       // Signed by the account (no prompt: session is in memory) so only you can replace your vault.
       const signature = await account.signMessage({ message: await vaultWriteMessage(sealed, timestamp) });
@@ -61,9 +59,10 @@ export function NamesProvider({ children }: { children: ReactNode }) {
     setUnlocking(true);
     setError(null);
     try {
-      key.current = await unlockNs("vault");
+      const prf = await unlockNs("vault");
+      key.current = { owner: address, prf };
       const res = (await (await fetch(`/api/vault/${address}`, { cache: "no-store" })).json()) as { sealed: Sealed | null };
-      let loaded = res.sealed ? await open<Book>(key.current, res.sealed) : EMPTY;
+      let loaded = res.sealed ? await open<Book>(prf, res.sealed) : EMPTY;
       const pend = pending.current;
       if (Object.keys(pend).length) {
         loaded = { ...loaded, circles: { ...pend, ...loaded.circles } };
@@ -76,7 +75,7 @@ export function NamesProvider({ children }: { children: ReactNode }) {
     } finally {
       setUnlocking(false);
     }
-  }, [address, book, unlockNs, persist]);
+  }, [address, book, unlockNs, persist, setBook]);
 
   const update = useCallback(
     async (fn: (b: Book) => Book) => {
@@ -85,7 +84,7 @@ export function NamesProvider({ children }: { children: ReactNode }) {
       setBook(next);
       await persist(next);
     },
-    [book, persist],
+    [book, persist, setBook],
   );
 
   const value = useMemo<NamesState>(

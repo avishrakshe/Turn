@@ -6,6 +6,9 @@ import { usePrefs } from "@/components/providers";
 import { Card, Pill, Screen } from "@/components/ui";
 import { countdown, useBalance, useMyCircles, useNow } from "@/lib/hooks";
 import { duration, fmt } from "@/lib/money";
+import { sessions } from "@/lib/indexer";
+import { useSession } from "@/lib/session";
+import { useQuery } from "@tanstack/react-query";
 
 function Home() {
   const { currency, rates } = usePrefs();
@@ -13,9 +16,19 @@ function Home() {
   const my = useMyCircles();
   const names = useNames();
   const now = useNow();
+  const { address } = useSession();
   const me = my.data?.Member[0];
   const seats = (my.data?.Membership ?? []).filter((m) => m.status !== "Left");
   const active = seats.filter((s) => s.circle.status !== "Completed");
+  const grants = useQuery({ queryKey: ["sessions", address], queryFn: () => sessions(address!), enabled: Boolean(address), refetchInterval: 10_000 });
+  // Auto-pay that's been turned off or has expired, for a circle that's still running.
+  const autopayOff = grants.data
+    ? active.filter((s) => {
+        if (s.status !== "Active") return false;
+        const g = grants.data.Session.find((x) => x.circle_id.toLowerCase() === s.circle_id.toLowerCase());
+        return !g || !g.active || Number(g.validUntil) < now;
+      })
+    : [];
 
   // Next contribution: the next round start across active circles (auto-pay collects it).
   const next = active
@@ -39,6 +52,19 @@ function Home() {
           </Link>
         </div>
       </Card>
+
+      {autopayOff.length > 0 && (
+        <Link href="/settings" className="flex items-center gap-3 rounded-3xl bg-accent-soft p-4" data-testid="autopay-banner">
+          <span className="text-2xl" aria-hidden>
+            ⏸️
+          </span>
+          <span className="flex-1 text-sm">
+            <b>Auto-pay for {names.circle(autopayOff[0]!.circle.id, "your circle")} is off.</b>
+            <span className="block text-ink/80">Tap to turn it back on so your turn isn't at risk.</span>
+          </span>
+          <span className="font-bold text-warn">Fix</span>
+        </Link>
+      )}
 
       {next && (
         <Card>

@@ -1,5 +1,6 @@
 "use client";
 import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 import type { Address } from "viem";
 import { RequireAccount } from "@/components/gate";
@@ -61,6 +62,7 @@ function Create() {
       await qc.invalidateQueries();
       setDone({ circle: predicted, link: inviteLink(predicted, secret, name) });
     } catch (e) {
+      console.warn("[turn] create failed:", e);
       setErr((e as Error).message || "Something went wrong. Please try again.");
     } finally {
       setBusy(false);
@@ -78,9 +80,10 @@ function Create() {
           </p>
         </Card>
         <ShareInvite link={done.link} circleName={name} amount={fmt(units, currency, rates)} />
-        <a href={`/circle/${done.circle}`} className="text-center font-bold text-primary">
+        {/* Client-side navigation keeps the in-memory passkey session (a full reload would ask for Face ID again). */}
+        <Link href={`/circle/${done.circle}`} className="text-center font-bold text-primary">
           Go to the circle →
-        </a>
+        </Link>
       </Screen>
     );
   }
@@ -108,7 +111,7 @@ function Create() {
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-              className="num min-h-12 flex-1 rounded-2xl border border-line bg-bg px-4 text-lg font-bold"
+              className="num min-h-12 w-full min-w-0 flex-1 rounded-2xl border border-line bg-bg px-4 text-lg font-bold"
               aria-label="Amount"
             />
           </div>

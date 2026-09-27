@@ -1,6 +1,6 @@
 "use client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SessionProvider, useSession } from "@/lib/session";
 import { guessCurrency, type Rates } from "@/lib/money";
 import { myCircles } from "@/lib/indexer";
@@ -8,13 +8,14 @@ import { startRun } from "@/lib/metrics";
 import { NamesProvider } from "./names";
 
 type Prefs = { currency: string; setCurrency: (c: string) => void; rates: Rates };
+const noSubscribe = () => () => {};
 const PrefsCtx = createContext<Prefs>({ currency: "INR", setCurrency: () => {}, rates: {} });
 
 function PrefsProvider({ children }: { children: ReactNode }) {
   const { address } = useSession();
   const [chosen, setChosen] = useState<string | null>(null);
-  const [guess, setGuess] = useState("INR");
-  useEffect(() => setGuess(guessCurrency()), []);
+  // Locale guess: "INR" on the server, the browser's region on the client, without a hydration mismatch.
+  const guess = useSyncExternalStore(noSubscribe, guessCurrency, () => "INR");
   const rates = useQuery({
     queryKey: ["fx"],
     queryFn: async () => ((await (await fetch("/api/fx")).json()) as { rates: Rates }).rates,

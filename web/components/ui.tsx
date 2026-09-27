@@ -114,7 +114,9 @@ export function Spinner({ className = "" }: { className?: string }) {
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-3xl border border-line bg-surface p-5 ${className}`}>{children}</section>;
+  // A caller-supplied background replaces the default (Tailwind can't resolve two bg-* utilities by order).
+  const bg = /(^|\s)bg-/.test(className) ? "" : "bg-surface";
+  return <section className={`rounded-3xl border border-line p-5 ${bg} ${className}`}>{children}</section>;
 }
 
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" | "bad" | "accent" | "primary" }) {

@@ -53,7 +53,7 @@ Turn/
 | 2. Contracts + full test suite | ✅ [`contracts/`](contracts/), [`docs/economics.md`](docs/economics.md), [`docs/gas.md`](docs/gas.md) |
 | 3. Relayer, testnet deployment, Envio indexer | ✅ [`relayer/`](relayer/), [`indexer/`](indexer/), [testnet verification](docs/testnet-verification.md) |
 | 4. Chainlink CRE automation | ✅ [`automation/`](automation/), [recorded CRE simulation](docs/cre-simulation.md) |
-| 5. Web app | ⏳ |
+| 5. Web app | ✅ [`web/`](web/): passkey namespaces, gasless join, auto-pay, all screens, stateless e2e, `/metrics` |
 | 6. Demo, docs, submission | ⏳ |
 
 ## Deployments

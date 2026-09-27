@@ -26,7 +26,8 @@ export function RequireAccount({ children, title }: { children: ReactNode; title
             setErr(null);
             try {
               await signIn();
-            } catch {
+            } catch (e) {
+              console.warn("[turn] sign-in failed:", (e as { code?: string }).code ?? "", (e as Error).message);
               setErr("We couldn't open Turn with that. Try again, or create a new account.");
             }
           }}

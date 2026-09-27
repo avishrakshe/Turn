@@ -1,22 +1,22 @@
 "use client";
 // Asked once, after someone's first payout: 1–5 plus one open question. Answers feed docs/traction.md.
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button, Card } from "./ui";
 
 const KEY = "turn.feedback.asked";
 
 export function Feedback({ circle }: { circle: string }) {
-  const [show, setShow] = useState(false);
+  // Rendered client-side only (after the circle has loaded), so reading storage in the initializer is safe.
+  const [show, setShow] = useState(() => {
+    try {
+      return !localStorage.getItem(KEY);
+    } catch {
+      return true;
+    }
+  });
   const [rating, setRating] = useState(0);
   const [answer, setAnswer] = useState("");
   const [sent, setSent] = useState(false);
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(KEY)) setShow(true);
-    } catch {
-      setShow(true);
-    }
-  }, []);
   if (!show) return null;
   if (sent) return <Card className="text-center font-semibold">Thank you! 🙏</Card>;
   return (

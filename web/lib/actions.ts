@@ -34,7 +34,10 @@ export async function run(signer: LocalAccount, calls: Call[]): Promise<{ txHash
     body: JSON.stringify(req),
   });
   const body = (await res.json()) as RelayResponse;
-  if (!body.ok) throw new ActionError(friendly(body.error, body.detail));
+  if (!body.ok) {
+    console.warn("[turn] relay rejected:", body.error, body.detail ?? "");
+    throw new ActionError(friendly(body.error, body.detail));
+  }
   return { txHash: body.txHash };
 }
 

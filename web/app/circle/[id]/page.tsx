@@ -1,7 +1,7 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { getAddress, isAddress, type Address } from "viem";
 import { Feedback } from "@/components/feedback";
 import { RequireAccount } from "@/components/gate";
@@ -31,8 +31,7 @@ function CirclePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [bid, setBid] = useState(500);
   const [invite, setInvite] = useState<string | null>(null);
-  const [celebrate, setCelebrate] = useState(joined);
-  const celebrated = useRef<Set<number>>(new Set());
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
 
   const d = useQuery({ queryKey: ["circle", circle], queryFn: () => circleDetail(circle), refetchInterval: 1_500 });
   const mine = useQuery({
@@ -43,26 +42,23 @@ function CirclePage() {
   });
 
   const c = d.data?.Circle[0];
-  const rounds = d.data?.Round ?? [];
+  const rounds = useMemo(() => d.data?.Round ?? [], [d.data]);
   const seats = d.data?.Membership ?? [];
   const me = seats.find((s) => s.member_id.toLowerCase() === address?.toLowerCase());
   const current = rounds.find((r) => r.number === c?.currentRound);
   const myPayment = d.data?.Payment.find((p) => p.round_id === current?.id && p.member_id.toLowerCase() === address?.toLowerCase());
 
-  // Payout celebration when a round pays out to me.
+  // Celebrate joining, and a payout to me in the last two minutes; each celebration shows once.
+  const recentWin = rounds.find(
+    (r) => r.status === "PaidOut" && r.winner_id?.toLowerCase() === address?.toLowerCase() && r.paidOutAt && now - Number(r.paidOutAt) < 120,
+  );
+  const celebrating = [joined ? "join" : null, recentWin ? `round-${recentWin.number}` : null].find((k) => k && !dismissed.has(k)) ?? null;
+  const celebrate = celebrating !== null;
   useEffect(() => {
-    for (const r of rounds) {
-      if (r.status === "PaidOut" && r.winner_id?.toLowerCase() === address?.toLowerCase() && !celebrated.current.has(r.number)) {
-        celebrated.current.add(r.number);
-        if (r.paidOutAt && now - Number(r.paidOutAt) < 120) setCelebrate(true);
-      }
-    }
-  }, [rounds, address, now]);
-  useEffect(() => {
-    if (!celebrate) return;
-    const t = setTimeout(() => setCelebrate(false), 3000);
+    if (!celebrating) return;
+    const t = setTimeout(() => setDismissed((prev) => new Set(prev).add(celebrating)), 3000);
     return () => clearTimeout(t);
-  }, [celebrate]);
+  }, [celebrating]);
 
   if (d.isLoading) return <Screen title="Circle" back="/home"><p className="text-muted">Loading…</p></Screen>;
   if (!c) return <Screen title="Circle" back="/home"><Notice>We can't find this circle yet. If you just created it, give it a few seconds.</Notice></Screen>;
@@ -317,7 +313,10 @@ function CirclePage() {
 function MemberName({ address }: { address: string }) {
   const names = useNames();
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(names.personName(address) ?? "");
+  const stored = names.personName(address) ?? "";
+  const [draft, setDraft] = useState<string | null>(null);
+  const value = draft ?? stored;
+  const setValue = setDraft;
   const label = names.person(address);
   if (!names.unlocked || label === "You") return <p className="font-semibold">{label}</p>;
   if (editing)

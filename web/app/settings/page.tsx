@@ -9,7 +9,7 @@ import { usePrefs } from "@/components/providers";
 import { Button, Card, Notice, Pill, Screen } from "@/components/ui";
 import { currencyCall, renewCall, revokeCall, run } from "@/lib/actions";
 import { config } from "@/lib/config";
-import { useMyCircles } from "@/lib/hooks";
+import { useMyCircles, useNow } from "@/lib/hooks";
 import { sessions } from "@/lib/indexer";
 import { CURRENCIES, fmt } from "@/lib/money";
 import { useSession } from "@/lib/session";
@@ -19,6 +19,7 @@ function Settings() {
   const { currency, setCurrency, rates } = usePrefs();
   const names = useNames();
   const my = useMyCircles();
+  const now = useNow(30_000);
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -74,7 +75,7 @@ function Settings() {
         <ul className="flex flex-col gap-3">
           {(grants.data?.Session ?? []).map((g) => {
             const seat = activeSeats.find((s) => s.circle_id.toLowerCase() === g.circle_id.toLowerCase());
-            const expired = Number(g.validUntil) < Date.now() / 1000;
+            const expired = Number(g.validUntil) < now;
             return (
               <li key={g.id} className="flex items-center gap-3 rounded-2xl bg-surface-2 p-3">
                 <div className="flex-1">

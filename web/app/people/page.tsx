@@ -50,7 +50,11 @@ function People() {
 
 function Row({ address }: { address: string }) {
   const names = useNames();
-  const [value, setValue] = useState(names.personName(address) ?? "");
+  // Show the decrypted name until the user starts typing (no state copying, so it fills in on unlock).
+  const stored = names.personName(address) ?? "";
+  const [draft, setDraft] = useState<string | null>(null);
+  const value = draft ?? stored;
+  const setValue = setDraft;
   const [saved, setSaved] = useState(false);
   return (
     <li className="flex items-center gap-3">

@@ -118,10 +118,11 @@ function Join() {
       ) : (
         <>
           <Button loading={busy} disabled={!inviteOk || full} onClick={join} data-testid="join">
-            {session.address ? "Join with Face ID" : "Join with Face ID (creates your account)"}
+            Join with Face ID
           </Button>
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2">
             <Pill tone="primary">No fees · no passwords · takes seconds</Pill>
+            {!session.address && <p className="text-xs text-muted">New to Turn? This also creates your account.</p>}
           </div>
           {!session.address && (
             <button className="text-sm font-semibold text-primary" onClick={() => void session.signIn().catch(() => {})}>
