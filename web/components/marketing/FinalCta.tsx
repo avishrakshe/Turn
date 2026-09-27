@@ -1,7 +1,11 @@
 import QRCode from "qrcode";
 import { ButtonLink } from "@/components/ui/Button";
 import { APP_PATH, SITE_URL } from "@/lib/site";
+import { OrbitField } from "./OrbitField";
 import { ChapterLabel } from "./Section";
+
+const CTA_FOCUS = { x: 0.62, y: 0.55 };
+const CTA_FOCUS_NARROW = { x: 0.85, y: 0.2 };
 
 export async function FinalCta() {
   const appUrl = `${SITE_URL}${APP_PATH}`;
@@ -12,7 +16,8 @@ export async function FinalCta() {
   return (
     <section id="start" aria-labelledby="start-title" className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="bg-marigold-soft border-marigold/30 rounded-[2rem] border p-7 sm:p-12 lg:grid lg:grid-cols-[1fr_auto] lg:items-center lg:gap-12">
+        <div className="bg-marigold-soft border-marigold/30 relative isolate overflow-hidden rounded-[2rem] border p-7 sm:p-12 lg:grid lg:grid-cols-[1fr_auto] lg:items-center lg:gap-12">
+          <OrbitField className="-z-10 opacity-70" focus={CTA_FOCUS} mobileFocus={CTA_FOCUS_NARROW} />
           <div>
             <ChapterLabel round={12} label="Your turn" />
             <h2 id="start-title" className="mt-4 max-w-xl text-4xl sm:text-6xl">

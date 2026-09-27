@@ -5,6 +5,7 @@ import { useRingAutoplay } from "@/components/ring/useRingAutoplay";
 import { Amount } from "@/components/ui/Amount";
 import { ButtonLink } from "@/components/ui/Button";
 import { APP_PATH, DESCRIPTION } from "@/lib/site";
+import { OrbitField } from "./OrbitField";
 
 const MEMBERS = ["Priya", "Arjun", "Fatima", "Ravi Kumar", "Meera", "Sanjay"].map((name) => ({ name }));
 const CONTRIBUTION = 5000;
@@ -15,7 +16,8 @@ export function Hero() {
   const current = MEMBERS[seat]!;
 
   return (
-    <section aria-labelledby="hero-title" className="relative overflow-hidden">
+    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
+      <OrbitField className="orbit-mask -z-10" />
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 pt-10 pb-20 sm:px-8 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-6 lg:pt-20 lg:pb-28">
         <div>
           <p className="chapter">A savings committee, kept safe</p>
@@ -39,7 +41,6 @@ export function Hero() {
         </div>
 
         <div className="relative mx-auto w-full max-w-[460px]">
-          <div aria-hidden className="bg-marigold-soft absolute inset-[14%] -z-10 rounded-full opacity-70 blur-3xl" />
           <TurnRing
             members={MEMBERS}
             step={step}

@@ -117,6 +117,14 @@
   }
 }
 
+/* Soft edges for the hero's live background: fades in under the nav, out at the bottom and sides. */
+.orbit-mask {
+  mask-image:
+    linear-gradient(to bottom, transparent, black 14%, black 62%, transparent),
+    linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  mask-composite: intersect;
+}
+
 /* App motion: the Face ID scan line, and the "your turn" celebration. */
 @keyframes scan {
   0%, 100% { transform: translateY(0); }
