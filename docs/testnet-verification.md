@@ -21,4 +21,19 @@ Transactions (explorer: <https://testnet.monadvision.com>):
 - Keeper collect: [`0x328f840f…076e`](https://testnet.monadvision.com/tx/0x328f840ff2554ce99cf9cccfb18fe8d0f757c01705097a6f5141a0fe5b3e076e)
 - Circle: [`0xdeeF3A00…abd0`](https://testnet.monadvision.com/address/0xdeeF3A00080B8AA785f7E157eC17F9E82eAbabd0)
 
+## Automation: the fallback keeper finishes the circle (2026-09-27)
+
+`automation/keeper/run-until-done.ts` ran the shared decision rule against the same circle until it completed.
+All 8 actions succeeded, and rounds 2 and 3 were collected through the members' **onchain auto-pay grants**, with
+no member signing anything:
+
+| Round | Actions | Net paid to recipient |
+| --- | --- | --- |
+| 1 | closeAuction → payout | 2 mAUSD (1 withheld as collateral: 2 rounds still owed) |
+| 2 | collect → closeAuction → payout | 3 mAUSD |
+| 3 | collect → closeAuction → payout | 4 mAUSD (full pot + deposit back) |
+
+The hosted Envio indexer then showed the circle as `Completed`, 9/9 payments on time, health 100, and AED↔INR
+cross-border corridor volume.
+
 Gas observations are in `docs/gas.md`. Monad bills the gas limit, and real costs are about 25–30% above local EVM numbers.

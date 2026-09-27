@@ -66,21 +66,22 @@ describe("decision rule", () => {
 describe("plain-language money", () => {
   it("formats AUSD in each member's currency", () => {
     expect(formatLocal(100_000_000n, "INR", rates)).toBe("₹9,588");
-    expect(formatLocal(100_000_000n, "AED", rates)).toBe("AED 367");
+    expect(formatLocal(100_000_000n, "AED", rates)).toBe("AED 367.25");
+    expect(formatLocal(1_000_000n, "AED", rates)).toBe("AED 3.67"); // small amounts stay meaningful
     expect(formatLocal(100_000_000n, "GBP", rates)).toBe("£75.51");
     expect(formatLocal(100_000_000n, "USD", rates)).toBe("$100.00");
     expect(formatLocal(100_000_000n, "JPY", rates)).toBe("$100.00"); // unknown -> USD
   });
 
   it("lists each currency once", () => {
-    expect(amountsByCurrency(100_000_000n, snap(0).members, rates)).toBe("₹9,588 · AED 367 · £75.51");
+    expect(amountsByCurrency(100_000_000n, snap(0).members, rates)).toBe("₹9,588 · AED 367.25 · £75.51");
   });
 
   it("writes messages without crypto jargon", () => {
     const texts = [NextAction.COLLECT, NextAction.CLOSE_AUCTION, NextAction.PAYOUT, NextAction.MARK_DEFAULT].map(
       (a) => messageFor(snap(a), rates, "Family Circle")!,
     );
-    expect(texts[0]).toContain("₹9,588 · AED 367 · £75.51");
+    expect(texts[0]).toContain("₹9,588 · AED 367.25 · £75.51");
     expect(texts[0]).toContain("open for the next 2 minutes");
     expect(duration(86_400 * 30)).toBe("30 days");
     expect(duration(3_600)).toBe("1 hour");

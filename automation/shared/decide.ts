@@ -88,7 +88,7 @@ export function formatLocal(amount6: bigint, currency: string, rates: Rates): st
   const rate = currency === "USD" ? 1 : rates[currency];
   if (rate === undefined) return `$${usd.toFixed(2)}`;
   const value = usd * rate;
-  const whole = currency === "INR" || currency === "AED";
+  const whole = currency === "INR"; // rupees are shown whole; AED/GBP/EUR/USD keep 2 decimals
   const n = whole ? Math.round(value).toString() : value.toFixed(2);
   const [int, frac] = n.split(".");
   const grouped = (int ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
