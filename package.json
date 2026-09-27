@@ -1,0 +1,12 @@
+{
+  "name": "turn",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "web:dev": "pnpm --filter @turn/web dev",
+    "web:build": "pnpm --filter @turn/web build"
+  }
+}
