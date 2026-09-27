@@ -52,3 +52,4 @@ Thumbs.db
 # ---- CRE build output ----
 automation/.cre-build/
 .cre_build_tmp.js
+automation/cre/turn-keeper/config.demo.json

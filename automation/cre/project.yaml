@@ -8,6 +8,12 @@ staging-settings:
     - chain-name: monad-testnet
       url: https://testnet-rpc.monad.xyz
 
+# Same as staging, but with a (gitignored) config that has a real Telegram chat id for demos.
+demo-settings:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz
+
 production-settings:
   rpcs:
     - chain-name: monad-testnet

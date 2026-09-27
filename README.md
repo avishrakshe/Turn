@@ -52,7 +52,7 @@ Turn/
 | 1. Plan: verified facts, design, interfaces | ✅ [`docs/plan.md`](docs/plan.md) |
 | 2. Contracts + full test suite | ✅ [`contracts/`](contracts/), [`docs/economics.md`](docs/economics.md), [`docs/gas.md`](docs/gas.md) |
 | 3. Relayer, testnet deployment, Envio indexer | ✅ [`relayer/`](relayer/), [`indexer/`](indexer/), [testnet verification](docs/testnet-verification.md) |
-| 4. Chainlink CRE automation | ⏳ |
+| 4. Chainlink CRE automation | ✅ [`automation/`](automation/), [recorded CRE simulation](docs/cre-simulation.md) |
 | 5. Web app | ⏳ |
 | 6. Demo, docs, submission | ⏳ |
 
