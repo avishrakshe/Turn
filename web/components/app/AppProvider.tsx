@@ -1,11 +1,13 @@
 "use client";
 
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { UiLabelsContext } from "@/components/ui/labels";
 import { Sheet } from "@/components/ui/Sheet";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
 import { useStore } from "@/lib/app/hooks";
-import { I18nProvider, LANGUAGES, useT } from "@/lib/i18n";
+import { I18nProvider, langInfo, translate, useT } from "@/lib/i18n";
+import { scriptFontClass } from "@/lib/script-fonts";
 import { FaceGlyph } from "./FaceGlyph";
 
 interface AppApi {
@@ -25,23 +27,35 @@ export function useApp(): AppApi {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const lang = useStore((s) => s.prefs.language);
-  const dir = LANGUAGES.find((l) => l.code === lang)?.dir ?? "ltr";
+  const { dir, script } = langInfo(lang);
 
-  // The app sets the document language and direction, so RTL (Urdu) flips the whole layout.
+  // The app sets the document language, direction and script font, so RTL (Urdu) flips the
+  // whole layout and sheets and toasts (portalled to <body>) pick up the script font too.
   useEffect(() => {
-    document.documentElement.lang = lang;
-    document.documentElement.dir = dir;
+    const html = document.documentElement;
+    const font = scriptFontClass[script];
+    html.lang = lang;
+    html.dir = dir;
+    if (font) html.classList.add(font);
     return () => {
-      document.documentElement.lang = "en";
-      document.documentElement.dir = "ltr";
+      html.lang = "en";
+      html.dir = "ltr";
+      if (font) html.classList.remove(font);
     };
-  }, [lang, dir]);
+  }, [lang, dir, script]);
+
+  const labels = useMemo(
+    () => ({ close: translate(lang, "common.close"), dismiss: translate(lang, "common.dismiss"), notifications: translate(lang, "common.notifications") }),
+    [lang],
+  );
 
   return (
     <I18nProvider lang={lang}>
-      <ToastProvider regionClassName="bottom-16 sm:bottom-0">
-        <Inner>{children}</Inner>
-      </ToastProvider>
+      <UiLabelsContext.Provider value={labels}>
+        <ToastProvider regionClassName="bottom-16 sm:bottom-0">
+          <Inner>{children}</Inner>
+        </ToastProvider>
+      </UiLabelsContext.Provider>
     </I18nProvider>
   );
 }

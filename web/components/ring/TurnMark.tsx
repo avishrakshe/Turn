@@ -35,7 +35,8 @@ export function TurnLogo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <TurnMark size={30} />
-      <span className="font-display text-[1.45rem] leading-none font-semibold tracking-tight" style={{ fontVariationSettings: '"SOFT" 100, "opsz" 48' }}>
+      {/* lang="en": the wordmark stays in Fraunces whatever the UI language. */}
+      <span lang="en" className="font-display text-[1.45rem] leading-none font-semibold tracking-tight" style={{ fontVariationSettings: '"SOFT" 100, "opsz" 48' }}>
         Turn
       </span>
     </span>

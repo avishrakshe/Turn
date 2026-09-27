@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { langInfo, useLang } from "@/lib/i18n";
 import { type DisplayCurrency, formatMoney } from "@/lib/money";
 import { FALLBACK_RATES, type Rates, toLocal, toUnits } from "./money";
 import { type State, store } from "./store";
@@ -64,6 +65,11 @@ export function useMoney() {
   return { fmt, local, units, currency, rates, live };
 }
 
+/** Short dates ("3 Oct", "3 अक्तू॰") with month names in the UI language. */
 export function useDate() {
-  return useCallback((d: Date, withYear = false) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) }), []);
+  const { locale } = langInfo(useLang());
+  return useCallback(
+    (d: Date, withYear = false) => d.toLocaleDateString(locale, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) }),
+    [locale],
+  );
 }

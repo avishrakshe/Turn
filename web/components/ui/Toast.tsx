@@ -2,6 +2,7 @@
 
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useUiLabels } from "./labels";
 
 type Tone = "neutral" | "success" | "warning" | "danger";
 
@@ -37,6 +38,7 @@ let nextId = 1;
 
 /** `regionClassName` lets a screen lift toasts above fixed UI such as a tab bar. */
 export function ToastProvider({ children, regionClassName }: { children: ReactNode; regionClassName?: string }) {
+  const labels = useUiLabels();
   const [items, setItems] = useState<ToastItem[]>([]);
 
   const dismiss = useCallback((id: number) => setItems((xs) => xs.filter((x) => x.id !== id)), []);
@@ -58,7 +60,7 @@ export function ToastProvider({ children, regionClassName }: { children: ReactNo
       {children}
       <div
         role="region"
-        aria-label="Notifications"
+        aria-label={labels.notifications}
         className={cn(
           "pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-end",
           regionClassName,
@@ -92,7 +94,7 @@ export function ToastProvider({ children, regionClassName }: { children: ReactNo
               </div>
               <button
                 type="button"
-                aria-label="Dismiss"
+                aria-label={labels.dismiss}
                 onClick={() => dismiss(t.id)}
                 className="text-ink-muted hover:bg-paper-sunk -me-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full"
               >

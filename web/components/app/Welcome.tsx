@@ -9,9 +9,9 @@ import { useRates, useStore } from "@/lib/app/hooks";
 import { codeFromLink, encodeInvite } from "@/lib/app/invite";
 import { AUSD_UNIT, FALLBACK_RATES } from "@/lib/app/money";
 import { store } from "@/lib/app/store";
-import { cn } from "@/lib/cn";
-import { LANGUAGES, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import type { DisplayCurrency } from "@/lib/money";
+import { LanguagePicker } from "./LanguagePicker";
 
 const CURRENCIES: DisplayCurrency[] = ["INR", "AED", "GBP", "USD"];
 
@@ -59,27 +59,7 @@ export function Welcome() {
         <h2 id="lang-label" className="font-sans text-sm font-semibold tracking-normal">
           {t("welcome.language")}
         </h2>
-        <ul className="flex flex-wrap gap-2">
-          {LANGUAGES.map((l) => (
-            <li key={l.code}>
-              <button
-                type="button"
-                lang={l.code}
-                aria-pressed={prefs.language === l.code}
-                disabled={!l.ready}
-                onClick={() => store.setPrefs({ language: l.code })}
-                className={cn(
-                  "min-h-11 rounded-pill border px-4 text-sm font-semibold",
-                  prefs.language === l.code ? "border-teal bg-teal-soft text-teal-ink" : "border-line text-ink-muted",
-                  !l.ready && "opacity-50",
-                )}
-              >
-                {l.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p className="text-ink-muted text-xs">{t("welcome.languageSoon")}</p>
+        <LanguagePicker />
       </section>
 
       <section className="flex flex-col gap-2">

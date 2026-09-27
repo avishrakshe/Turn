@@ -6,6 +6,8 @@ export const en = {
     demoBadge: "Demo",
     demoBanner: "Demo mode: runs only in this browser. No real money, nothing on-chain yet.",
     close: "Close",
+    dismiss: "Dismiss",
+    notifications: "Notifications",
     back: "Back",
     next: "Next",
     cancel: "Cancel",
@@ -20,7 +22,7 @@ export const en = {
     weeks: { one: "{count} week", other: "{count} weeks" },
     people: { one: "{count} person", other: "{count} people" },
   },
-  nav: { home: "Home", score: "Turn Score", settings: "Settings", main: "App" },
+  nav: { home: "Home", score: "Turn Score", settings: "Settings", main: "App", brandHome: "Turn home" },
   passkey: {
     title: "Confirm with Face ID",
     demoNote: "Demo: no passkey is created and nothing is signed.",
@@ -32,7 +34,7 @@ export const en = {
     lead: "Run your family committee with Face ID. No passwords, no app to install.",
     language: "Language",
     currency: "Show money in",
-    languageSoon: "More languages are coming in the next update.",
+    languageNote: "Translations are drafts, being checked by native speakers.",
     start: "Start a circle",
     haveInvite: "I have an invite link",
     pasteInvite: "Paste your invite link",
@@ -62,6 +64,10 @@ export const en = {
   create: {
     title: "Start a circle",
     steps: ["Template", "Amount", "Turns", "Review"],
+    stepOf: "Step {current} of {total}",
+    stepDone: "done",
+    fewer: "One fewer person",
+    more: "One more person",
     templateTitle: "What are you saving for?",
     templates: {
       wedding: { name: "Wedding fund", blurb: "A big sum for a family wedding, with bidding if someone needs it sooner." },

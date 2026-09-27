@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh flex-col">
       <header className="bg-paper/90 border-line sticky top-0 z-30 border-b backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-xl items-center gap-3 px-4">
-          <Link href="/app" className="-ms-1 rounded-lg p-1" aria-label="Turn home">
+          <Link href="/app" className="-ms-1 rounded-lg p-1" aria-label={t("nav.brandHome")}>
             <TurnLogo />
           </Link>
           <Badge tone="warning" className="ms-1">{t("common.demoBadge")}</Badge>

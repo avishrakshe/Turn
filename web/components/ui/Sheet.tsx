@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useId, useRef } from "react";
 import { cn } from "@/lib/cn";
+import { useUiLabels } from "./labels";
 
 export interface SheetProps {
   open: boolean;
@@ -18,6 +19,7 @@ export interface SheetProps {
  * focus trap, Escape to close and inert background.
  */
 export function Sheet({ open, onClose, title, description, children, footer }: SheetProps) {
+  const labels = useUiLabels();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descId = useId();
@@ -63,7 +65,7 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={labels.close}
             className="text-ink-muted hover:bg-paper-sunk -me-2 -mt-1 grid size-11 place-items-center rounded-full"
           >
             <svg viewBox="0 0 20 20" className="size-5" aria-hidden>

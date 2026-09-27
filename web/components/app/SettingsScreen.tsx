@@ -10,9 +10,10 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useDate, useMoney, useStore } from "@/lib/app/hooks";
 import { roundDate } from "@/lib/app/selectors";
 import { type CircleRec, store } from "@/lib/app/store";
-import { LANGUAGES, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import type { DisplayCurrency } from "@/lib/money";
 import { useApp } from "./AppProvider";
+import { LanguagePicker } from "./LanguagePicker";
 
 const CURRENCIES: DisplayCurrency[] = ["INR", "AED", "GBP", "USD"];
 
@@ -46,23 +47,7 @@ export function SettingsScreen() {
       </Section>
 
       <Section title={t("settings.language")}>
-        <ul className="flex flex-wrap gap-2">
-          {LANGUAGES.map((l) => (
-            <li key={l.code}>
-              <button
-                type="button"
-                lang={l.code}
-                aria-pressed={prefs.language === l.code}
-                disabled={!l.ready}
-                onClick={() => store.setPrefs({ language: l.code })}
-                className={`min-h-11 rounded-pill border px-4 text-sm font-semibold ${prefs.language === l.code ? "border-teal bg-teal-soft text-teal-ink" : "border-line text-ink-muted"} ${l.ready ? "" : "opacity-50"}`}
-              >
-                {l.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p className="text-ink-muted mt-2 text-xs">{t("welcome.languageSoon")}</p>
+        <LanguagePicker />
       </Section>
 
       <Section title={t("settings.currency")} hint={t("settings.currencyHint")}>

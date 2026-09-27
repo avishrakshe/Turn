@@ -45,7 +45,8 @@ export function Button({ variant = "primary", size = "md", busy, icon, className
       aria-busy={busy || undefined}
       {...rest}
     >
-      {busy ? <RingLoader size={18} label="Working" /> : icon}
+      {/* aria-busy and the button's own text say what's happening; the loader is decoration. */}
+      {busy ? <RingLoader size={18} decorative /> : icon}
       {children}
     </button>
   );

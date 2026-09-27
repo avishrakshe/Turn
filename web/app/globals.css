@@ -88,6 +88,10 @@
     line-height: 1.1;
     text-wrap: balance;
   }
+  /* Indic and Arabic headings need room for marks above and below. */
+  :is(h1, h2, h3):is(:lang(hi), :lang(ml), :lang(ta), :lang(ur)) {
+    line-height: 1.35;
+  }
   h1, h2, h3, .font-display {
     /* Soft, rounded terminals; optical size follows the rendered size automatically. */
     font-variation-settings: "SOFT" 60, "WONK" 0;
@@ -185,4 +189,13 @@
   text-transform: uppercase;
   color: var(--marigold-ink);
   font-variant-numeric: tabular-nums;
+}
+
+/* Fraunces is Latin-only, and its metric fallback is a local Times New Roman, which has Arabic
+   glyphs and would win over the script font. So display text in Hindi, Malayalam, Tamil and
+   Urdu uses the script's own sans, untracked. Numbers (.tabular) stay in Fraunces. Unlayered,
+   to beat the font-display and tracking utilities. */
+:is(h1, h2, h3, .font-display):not(.tabular):is(:lang(hi), :lang(ml), :lang(ta), :lang(ur)) {
+  font-family: var(--font-script), var(--font-dm-sans), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  letter-spacing: normal;
 }

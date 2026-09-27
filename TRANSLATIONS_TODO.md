@@ -5,6 +5,23 @@ speaker yet. Please review each one, fix it in place, and tick it off. Keep amou
 In the Urdu strings, amounts are wrapped in invisible left-to-right isolate marks (U+2066/U+2069);
 leave those in place.
 
+## App UI (`web/lib/i18n/{hi,ml,ta,ur}.ts`)
+
+Every string in the app, one file per language, laid out exactly like `en.ts`. Easiest to review
+side by side with `en.ts`, or in the app itself: Settings → Language.
+
+- Keep every `{placeholder}` exactly as it is (a test fails if one is dropped or renamed). A
+  language's `one` form may leave out `{count}` if that reads better ("एक महीना").
+- Hindi, Malayalam and Tamil keep Latin digits; Urdu does too (members in India and the Gulf read
+  amounts that way). Amounts, names and links are direction-isolated at runtime in Urdu, so no
+  marks are needed in the catalog.
+- Word choice for the circle itself: कमेटी (hi), ചിട്ടി (ml), சீட்டு (ta), کمیٹی (ur).
+
+- [ ] **Hindi (hi)**: `web/lib/i18n/hi.ts`
+- [ ] **Malayalam (ml)**: `web/lib/i18n/ml.ts`
+- [ ] **Tamil (ta)**: `web/lib/i18n/ta.ts`
+- [ ] **Urdu (ur), RTL**: `web/lib/i18n/ur.ts`
+
 ## Landing page: reminder previews (`web/components/marketing/Languages.tsx`)
 
 English source: "Reminder: your ₹5,000 for Family Circle goes out automatically tomorrow. This month the pot goes to Fatima."

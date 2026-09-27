@@ -1,11 +1,21 @@
 import { cn } from "@/lib/cn";
 
+interface StepperProps {
+  steps: string[];
+  current: number;
+  label?: string;
+  /** Translated "Step 2 of 4" and "done", for the app's language. */
+  stepOf?: string;
+  doneLabel?: string;
+  className?: string;
+}
+
 /** Multi-step flow indicator. `current` is 0-based. Labels collapse to the current one on phones. */
-export function Stepper({ steps, current, label = "Progress", className }: { steps: string[]; current: number; label?: string; className?: string }) {
+export function Stepper({ steps, current, label = "Progress", stepOf, doneLabel = "done", className }: StepperProps) {
   return (
     <nav aria-label={label} className={className}>
       <p className="text-ink-muted mb-3 text-sm sm:sr-only">
-        Step {current + 1} of {steps.length}: <span className="text-ink font-semibold">{steps[current]}</span>
+        {stepOf ?? `Step ${current + 1} of ${steps.length}`}: <span className="text-ink font-semibold">{steps[current]}</span>
       </p>
       <ol className="flex items-center gap-2">
         {steps.map((s, i) => {
@@ -31,7 +41,7 @@ export function Stepper({ steps, current, label = "Progress", className }: { ste
               </span>
               <span className={cn("hidden text-sm sm:inline", active ? "font-semibold" : "text-ink-muted")}>
                 {s}
-                {done && <span className="sr-only"> (done)</span>}
+                {done && <span className="sr-only"> ({doneLabel})</span>}
               </span>
               {i < steps.length - 1 && <span aria-hidden className={cn("h-0.5 flex-1 rounded-full", done ? "bg-teal" : "bg-line")} />}
             </li>

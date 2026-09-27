@@ -76,7 +76,13 @@ export function CreateFlow() {
         )}
         <h1 className="text-3xl">{t("create.title")}</h1>
       </div>
-      <Stepper steps={[...m.create.steps]} current={step} label={t("create.title")} />
+      <Stepper
+        steps={[...m.create.steps]}
+        current={step}
+        label={t("create.title")}
+        stepOf={t("create.stepOf", { current: step + 1, total: m.create.steps.length })}
+        doneLabel={t("create.stepDone")}
+      />
 
       {step === 0 && (
         <fieldset className="flex flex-col gap-3">
@@ -125,13 +131,13 @@ export function CreateFlow() {
               {t("create.membersLabel")}
             </span>
             <div className="flex items-center gap-4" role="group" aria-labelledby="members-label">
-              <Button variant="outline" onClick={() => setMembers((n) => Math.max(MIN_MEMBERS, n - 1))} disabled={members <= MIN_MEMBERS} aria-label="One fewer person">
+              <Button variant="outline" onClick={() => setMembers((n) => Math.max(MIN_MEMBERS, n - 1))} disabled={members <= MIN_MEMBERS} aria-label={t("create.fewer")}>
                 −
               </Button>
               <output aria-live="polite" className="tabular font-display w-12 text-center text-3xl">
                 {members}
               </output>
-              <Button variant="outline" onClick={() => setMembers((n) => Math.min(MAX_MEMBERS, n + 1))} disabled={members >= MAX_MEMBERS} aria-label="One more person">
+              <Button variant="outline" onClick={() => setMembers((n) => Math.min(MAX_MEMBERS, n + 1))} disabled={members >= MAX_MEMBERS} aria-label={t("create.more")}>
                 +
               </Button>
             </div>

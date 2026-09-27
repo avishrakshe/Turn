@@ -3,10 +3,22 @@ import { polar } from "./geometry";
 import styles from "./ring.module.css";
 
 /** Loading state: a warm light passing seat to seat. Use for waits, not for page content (use Skeleton). */
-export function RingLoader({ size = 24, label = "Loading", className }: { size?: number; label?: string; className?: string }) {
+export function RingLoader({
+  size = 24,
+  label = "Loading",
+  decorative,
+  className,
+}: {
+  size?: number;
+  label?: string;
+  /** Hidden from assistive tech, when the surrounding control already announces the wait. */
+  decorative?: boolean;
+  className?: string;
+}) {
   const seats = 6;
+  const a11y = decorative ? { "aria-hidden": true } : { role: "img", "aria-label": label };
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label={label} className={cn("shrink-0", className)}>
+    <svg width={size} height={size} viewBox="0 0 24 24" {...a11y} className={cn("shrink-0", className)}>
       <g>
         {Array.from({ length: seats }, (_, i) => {
           const p = polar(12, 12, 8.5, (i * 360) / seats);
