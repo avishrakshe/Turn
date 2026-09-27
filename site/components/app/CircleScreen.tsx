@@ -17,6 +17,7 @@ import { RevealSheet } from "./RevealSheet";
 import { ShareInvite } from "./ShareInvite";
 import { SwapSheet } from "./SwapSheet";
 import { Timeline } from "./Timeline";
+import { PayMethodLine } from "./Wallet";
 
 const healthTone: Record<Health, "success" | "warning" | "danger" | "neutral" | "trust"> = {
   green: "success",
@@ -200,6 +201,7 @@ function Running({ c, onBid, onSwap }: { c: CircleRec; onBid: () => void; onSwap
         {me.credit > 0n && <Row label={t("circle.credit")} value={fmt(me.credit)} />}
         {e.status === "COMPLETED" && <Row label={t("circle.complete")} value={t("circle.claimDone")} />}
       </dl>
+      {next && <PayMethodLine units={next.amount} />}
     </>
   );
 }

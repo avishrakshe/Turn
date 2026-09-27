@@ -53,6 +53,20 @@ Two rows extend `docs/plan.md` §5 and will be added to the contract interface:
 
 </Callout>
 
+## Paying from your own wallet (demo)
+
+In the demo app, **Settings → Pay with → Stablecoins** swaps Face ID for a browser wallet (MetaMask, Rabby, Coinbase Wallet…). The passkey flow in the table above is unchanged. This is exactly what the wallet path does on-chain today:
+
+| Step | Wallet prompt | Signed by | Sent by and paid by | Call | Events |
+| --- | --- | --- | --- | --- | --- |
+| **Connect** | 1 (`eth_requestAccounts`) | — | — | none: wallets are found through EIP-6963 | — |
+| **Switch network** | 1 (`wallet_switchEthereumChain`, or `wallet_addEthereumChain` if unknown) | — | — | none: moves the wallet to Monad testnet (chain `10143`) | — |
+| **Show the balance** | None | — | — | `eth_call` of `balanceOf(address)` on the stablecoin, through the public RPC | — |
+| **Confirm a money action** | 1 (`personal_sign`) | Member's wallet (EIP-191 message) | **Not sent** | none: the plain-language message says no transaction is sent | — |
+| **Get test tokens** (testnet only) | 1 (`eth_sendTransaction`) | Member's wallet | **Member**, paying the fee in test MON | `MockAUSD.faucet(member, 1000e6)` | `Transfer` (from `0x0` to the member) |
+
+The faucet is the only transaction the demo sends. The stablecoin's address comes from `contracts/deployments/10143.json`, the same file as the table on [Contracts](/docs/contracts).
+
 ## One month, end to end
 
 <Mermaid

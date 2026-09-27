@@ -7,19 +7,22 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Sheet } from "@/components/ui/Sheet";
-import { useDate, useMoney, useStore } from "@/lib/app/hooks";
+import { useDate, useMoney, usePayWithWallet, useStore } from "@/lib/app/hooks";
 import { roundDate } from "@/lib/app/selectors";
 import { type CircleRec, store } from "@/lib/app/store";
 import { useT } from "@/lib/i18n";
 import type { DisplayCurrency } from "@/lib/money";
 import { promptInstall, useInstall } from "@/lib/pwa";
+import { STABLECOIN } from "@/lib/wallet";
 import { useApp } from "./AppProvider";
 import { LanguagePicker } from "./LanguagePicker";
+import { WalletPanel } from "./Wallet";
 
 const CURRENCIES: DisplayCurrency[] = ["INR", "AED", "GBP", "USD"];
 
 export function SettingsScreen() {
   const t = useT();
+  const byWallet = usePayWithWallet();
   const router = useRouter();
   const { passkey } = useApp();
   const { fmt } = useMoney();
@@ -60,6 +63,27 @@ export function SettingsScreen() {
           options={CURRENCIES.map((c) => ({ value: c, label: c }))}
           className="flex w-full"
         />
+      </Section>
+
+      <Section title={t("wallet.payWith")} hint={t("wallet.payWithHint")}>
+        <SegmentedControl
+          label={t("wallet.payWith")}
+          value={prefs.payWith ?? "local"}
+          onChange={(v) => store.setPrefs({ payWith: v })}
+          options={[
+            { value: "local", label: t("wallet.payLocal") },
+            { value: "stablecoin", label: t("wallet.payStable") },
+          ]}
+          className="flex w-full"
+        />
+        <p className="text-ink-muted text-sm">
+          {prefs.payWith === "stablecoin" ? t("wallet.payStableNote", { symbol: STABLECOIN.symbol }) : t("wallet.payLocalNote")}
+        </p>
+        {prefs.payWith === "stablecoin" && (
+          <div className="border-line border-t pt-4">
+            <WalletPanel />
+          </div>
+        )}
       </Section>
 
       {install.ready && !install.standalone && (
@@ -162,7 +186,7 @@ export function SettingsScreen() {
                 if (c && (await passkey(t("settings.revokeTitle")))) store.setAutopay(c.id, false);
               }}
             >
-              {t("settings.revokeConfirm")}
+              {t(byWallet ? "wallet.revokeCta" : "settings.revokeConfirm")}
             </Button>
             <Button variant="ghost" onClick={() => setRevoking(null)}>
               {t("common.cancel")}

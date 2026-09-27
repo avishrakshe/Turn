@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { useStore } from "@/lib/app/hooks";
 import { useT } from "@/lib/i18n";
 import { cachePage } from "@/lib/pwa";
+import { WalletButton } from "./Wallet";
 
 const icon = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
@@ -74,8 +75,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span aria-hidden className="bg-warning size-1.5 rounded-full" />
             {t("common.demoBadge")}
           </button>
+          <div className="ms-auto flex items-center gap-2">
           {signedIn && (
-            <nav aria-label={t("nav.main")} className="ms-auto hidden sm:block">
+            <nav aria-label={t("nav.main")} className="hidden sm:block">
               <ul className="flex gap-1">
                 {TABS.map((tab) => (
                   <li key={tab.href}>
@@ -97,8 +99,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               </ul>
             </nav>
           )}
+          <WalletButton />
+          </div>
         </div>
-        {!signedIn && <p className="border-line text-ink-muted border-t px-4 py-1.5 text-center text-xs">{t("common.demoBanner")}</p>}
+        {!signedIn &&<p className="border-line text-ink-muted border-t px-4 py-1.5 text-center text-xs">{t("common.demoBanner")}</p>}
       </header>
 
       <main id="main" className={cn("mx-auto w-full max-w-xl flex-1 px-4 pt-6", signedIn ? "pb-32 sm:pb-12" : "pb-12")}>

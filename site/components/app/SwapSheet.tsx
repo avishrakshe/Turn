@@ -5,7 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { useToast } from "@/components/ui/Toast";
-import { useMoney } from "@/lib/app/hooks";
+import { useMoney, usePayWithWallet } from "@/lib/app/hooks";
 import { memberName } from "@/lib/app/selectors";
 import { type CircleRec, store, YOU } from "@/lib/app/store";
 import { cn } from "@/lib/cn";
@@ -19,6 +19,7 @@ import { useApp } from "./AppProvider";
  */
 export function SwapSheet({ circle: c, open, onClose }: { circle: CircleRec; open: boolean; onClose: () => void }) {
   const t = useT();
+  const byWallet = usePayWithWallet();
   const toast = useToast();
   const { passkey } = useApp();
   const { fmt } = useMoney();
@@ -51,7 +52,7 @@ export function SwapSheet({ circle: c, open, onClose }: { circle: CircleRec; ope
       footer={
         pick && (
           <Button size="lg" onClick={ask}>
-            {t("swap.confirm", { name: memberName(c, pick) })}
+            {t(byWallet ? "wallet.swapCta" : "swap.confirm", { name: memberName(c, pick) })}
           </Button>
         )
       }

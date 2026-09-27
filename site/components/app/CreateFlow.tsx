@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Stepper } from "@/components/ui/Stepper";
-import { useMoney, useStore } from "@/lib/app/hooks";
+import { useMoney, usePayWithWallet, useStore } from "@/lib/app/hooks";
 import { niceAmount } from "@/lib/app/money";
 import { store } from "@/lib/app/store";
 import { type Frequency, MAX_MEMBERS, MIN_MEMBERS, TEMPLATES, type TemplateId } from "@/lib/app/templates";
@@ -18,6 +18,7 @@ import { useApp } from "./AppProvider";
 
 export function CreateFlow() {
   const t = useT();
+  const byWallet = usePayWithWallet();
   const m = useMessages();
   const router = useRouter();
   const { passkey, receipt } = useApp();
@@ -259,7 +260,7 @@ export function CreateFlow() {
             </Button>
           ) : (
             <Button size="lg" className="w-full" onClick={create} disabled={!canNext} busy={busy}>
-              {t("create.confirm")}
+              {t(byWallet ? "wallet.createCta" : "create.confirm")}
             </Button>
           )}
         </div>

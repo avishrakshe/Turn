@@ -7,14 +7,16 @@ import { TurnRing } from "@/components/ring/TurnRing";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { useDate, useMoney, useStore } from "@/lib/app/hooks";
+import { useDate, useMoney, usePayWithWallet, useStore } from "@/lib/app/hooks";
 import { decodeInvite } from "@/lib/app/invite";
 import { store } from "@/lib/app/store";
 import { useT } from "@/lib/i18n";
 import { useApp } from "./AppProvider";
+import { PayMethodLine } from "./Wallet";
 
 export function JoinScreen({ code }: { code: string }) {
   const t = useT();
+  const byWallet = usePayWithWallet();
   const router = useRouter();
   const { passkey, receipt } = useApp();
   const { fmt } = useMoney();
@@ -95,6 +97,8 @@ export function JoinScreen({ code }: { code: string }) {
         <p className="bg-teal-soft text-teal-ink px-4 py-3 text-center text-sm font-semibold">{t("join.receive", { pot: fmt(contribution * BigInt(invite.n)) })}</p>
       </section>
 
+      <PayMethodLine units={contribution} />
+
       <Card tone="sunk" className="flex gap-3">
         <svg viewBox="0 0 24 24" className="text-success mt-0.5 size-6 shrink-0" aria-hidden>
           <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z M9 12l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
@@ -125,7 +129,7 @@ export function JoinScreen({ code }: { code: string }) {
       <div className="flex flex-col gap-2">
         <p className="text-ink-muted text-sm">{t("join.whatNext", { amount: fmt(contribution) })}</p>
         <Button size="lg" onClick={join} busy={busy} disabled={!profile && name.trim() === ""}>
-          {t("join.confirm")}
+          {t(byWallet ? "wallet.joinCta" : "join.confirm")}
         </Button>
       </div>
     </div>

@@ -65,6 +65,11 @@ export function useMoney() {
   return { fmt, local, units, currency, rates, live };
 }
 
+/** True when the person pays in stablecoins, so confirmations are wallet signatures, not Face ID. */
+export function usePayWithWallet(): boolean {
+  return useStore((s) => s.prefs.payWith === "stablecoin");
+}
+
 /** Short dates ("3 Oct", "3 अक्तू॰") with month names in the UI language. */
 export function useDate() {
   const { locale } = langInfo(useLang());

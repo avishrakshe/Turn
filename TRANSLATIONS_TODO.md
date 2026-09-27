@@ -17,7 +17,8 @@ side by side with `en.ts`, or in the app itself: Settings → Language.
   marks are needed in the catalog.
 - Word choice for the circle itself: कमेटी (hi), ചിട്ടി (ml), சீட்டு (ta), کمیٹی (ur).
 
-- New since the first drafts: the `install` section ("Get the app" and the iPhone and Android steps),
+- New since the first drafts: the `wallet` section (connecting a wallet, paying in stablecoins,
+  and `signMessage`, the text people see inside their wallet when they sign), the `install` section ("Get the app" and the iPhone and Android steps),
   `join.statLabels`, and the reworded `welcome.lead`. Button names in the install steps
   ("Add to Home Screen", "Install app") stay in English, because that's how the phone shows them.
 

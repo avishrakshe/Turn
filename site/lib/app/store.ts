@@ -24,9 +24,13 @@ export const YOU = "you";
 const KEY = "turn-demo-v1";
 const DEMO_NAMES = ["Meera", "Arjun", "Fatima", "Ravi", "Sanjay", "Aisha", "Kiran", "Deepa", "Imran", "Lakshmi"];
 
+export type PayWith = "local" | "stablecoin";
+
 export interface Prefs {
   language: Lang;
   currency: DisplayCurrency;
+  /** How contributions are paid. Missing in data saved before it existed: treat as "local". */
+  payWith?: PayWith;
 }
 
 export interface Profile {
