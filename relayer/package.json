@@ -1,0 +1,34 @@
+{
+  "name": "@turn/relayer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Turn gasless relayer: sponsors EIP-7702 (type-4) transactions and submits user-signed TurnAccount batches.",
+  "exports": {
+    "./client": "./src/client.ts",
+    "./app": "./src/app.ts",
+    "./config": "./src/config.ts",
+    "./store": "./src/store.ts",
+    "./submit": "./src/submit.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file=../.env src/index.ts",
+    "start": "tsx --env-file-if-exists=../.env src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify-7702": "tsx --env-file=../.env scripts/verify-7702.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.1",
+    "@turn/contracts": "workspace:*",
+    "hono": "4.13.9",
+    "viem": "2.56.9",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  }
+}

@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+# Local development: index a local anvil chain (31337) over RPC. Same contracts/handlers as config.yaml.
+# Used by scripts/local-up.sh:  envio dev --config config.local.yaml
+name: turn-indexer-local
+description: Turn indexer against a local anvil chain.
+field_selection:
+  transaction_fields:
+    - hash
+contracts:
+  - name: CircleFactory
+    abi_file_path: ./abis/CircleFactory.json
+    events:
+      - event: CircleCreated
+  - name: Circle
+    abi_file_path: ./abis/Circle.json
+    events:
+      - event: Joined
+      - event: Left
+      - event: CircleStarted
+      - event: RoundOpened
+      - event: ContributionPaid
+      - event: ContributionFailed
+      - event: BidPlaced
+      - event: AuctionClosed
+      - event: PayoutMade
+      - event: CreditAccrued
+      - event: CollateralPosted
+      - event: CollateralReleased
+      - event: DepositRebated
+      - event: DefaultMarked
+      - event: MemberEjected
+      - event: RepaymentOwed
+      - event: RepaymentPaid
+      - event: RoundCancelled
+      - event: ReserveChanged
+      - event: CircleCompleted
+      - event: Claimed
+      - event: MemberProfileSet
+  - name: CreditRegistry
+    abi_file_path: ./abis/CreditRegistry.json
+    events:
+      - event: RecordUpdated
+  - name: TurnAccount
+    abi_file_path: ./abis/TurnAccount.json
+    events:
+      - event: PullGranted
+      - event: PullRevoked
+      - event: Pulled
+chains:
+  - id: 31337
+    start_block: 0
+    rpc:
+      - url: ${ENVIO_LOCAL_RPC_URL:-http://127.0.0.1:8545}
+        for: sync
+    contracts:
+      - name: CircleFactory
+        address: "${ENVIO_FACTORY_ADDRESS}"
+      - name: CreditRegistry
+        address: "${ENVIO_REGISTRY_ADDRESS}"
+      - name: Circle
+      - name: TurnAccount

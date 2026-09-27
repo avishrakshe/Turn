@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: turn-indexer
+description: Turn — onchain savings circles on Monad. Circles, rounds, live auctions, payments, defaults, auto-pay sessions, cross-circle credit, corridor and network stats.
+field_selection:
+  transaction_fields:
+    - hash
+contracts:
+  - name: CircleFactory
+    abi_file_path: ./abis/CircleFactory.json
+    events:
+      - event: CircleCreated
+  - name: Circle
+    # Registered dynamically from CircleFactory.CircleCreated
+    abi_file_path: ./abis/Circle.json
+    events:
+      - event: Joined
+      - event: Left
+      - event: CircleStarted
+      - event: RoundOpened
+      - event: ContributionPaid
+      - event: ContributionFailed
+      - event: BidPlaced
+      - event: AuctionClosed
+      - event: PayoutMade
+      - event: CreditAccrued
+      - event: CollateralPosted
+      - event: CollateralReleased
+      - event: DepositRebated
+      - event: DefaultMarked
+      - event: MemberEjected
+      - event: RepaymentOwed
+      - event: RepaymentPaid
+      - event: RoundCancelled
+      - event: ReserveChanged
+      - event: CircleCompleted
+      - event: Claimed
+      - event: MemberProfileSet
+  - name: CreditRegistry
+    abi_file_path: ./abis/CreditRegistry.json
+    events:
+      - event: RecordUpdated
+  - name: TurnAccount
+    # EIP-7702 accounts: events are emitted *at the member's own address*. Registered when they join a circle.
+    abi_file_path: ./abis/TurnAccount.json
+    events:
+      - event: PullGranted
+      - event: PullRevoked
+      - event: Pulled
+chains:
+  - id: 10143 # Monad testnet — addresses from contracts/deployments/10143.json (env vars override for redeploys)
+    start_block: ${ENVIO_START_BLOCK:-65859276}
+    contracts:
+      - name: CircleFactory
+        address: "${ENVIO_FACTORY_ADDRESS:-0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb}"
+      - name: CreditRegistry
+        address: "${ENVIO_REGISTRY_ADDRESS:-0x712d913a6fE057ae590da80941557EEbE93E9Bc0}"
+      - name: Circle
+      - name: TurnAccount

@@ -45,6 +45,57 @@ Turn/
 └── docs/         # economics, submission, scripts, access, architecture
 ```
 
+## Progress
+
+| Phase | Status |
+| --- | --- |
+| 1. Plan: verified facts, design, interfaces | ✅ [`docs/plan.md`](docs/plan.md) |
+| 2. Contracts + full test suite | ✅ [`contracts/`](contracts/), [`docs/economics.md`](docs/economics.md), [`docs/gas.md`](docs/gas.md) |
+| 3. Relayer, testnet deployment, Envio indexer | ✅ [`relayer/`](relayer/), [`indexer/`](indexer/), [testnet verification](docs/testnet-verification.md) |
+| 4. Chainlink CRE automation | ✅ [`automation/`](automation/), [recorded CRE simulation](docs/cre-simulation.md) |
+| 5. Web app | ✅ [`web/`](web/): passkey namespaces, gasless join, auto-pay, all screens, stateless e2e, `/metrics` |
+| 6. Demo, docs, submission | ⏳ |
+
+## Deployments
+
+**Monad testnet (10143)**. All contracts are verified on MonadVision (Sourcify). The deploy start block is `65859276`.
+
+| Contract | Address |
+| --- | --- |
+| CircleFactory | [`0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb`](https://testnet.monadvision.com/address/0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb) |
+| Circle (implementation) | [`0x57A61bA3AC15F8f511a7C0B3b861B23537d80668`](https://testnet.monadvision.com/address/0x57A61bA3AC15F8f511a7C0B3b861B23537d80668) |
+| CreditRegistry | [`0x712d913a6fE057ae590da80941557EEbE93E9Bc0`](https://testnet.monadvision.com/address/0x712d913a6fE057ae590da80941557EEbE93E9Bc0) |
+| TurnAccount (EIP-7702 delegate) | [`0x64a831694D4Eea3A08abD77303d572244c366898`](https://testnet.monadvision.com/address/0x64a831694D4Eea3A08abD77303d572244c366898) |
+| TurnKeeper (Chainlink CRE receiver) | [`0x92B4984540a62278051a832C3370223244080771`](https://testnet.monadvision.com/address/0x92B4984540a62278051a832C3370223244080771) |
+| MockAUSD (**test only**, until testnet AUSD) | [`0xf5f909b2d7Da364246D61C307b062844EEF86e9a`](https://testnet.monadvision.com/address/0xf5f909b2d7Da364246D61C307b062844EEF86e9a) |
+
+The gasless design is verified live on testnet: [`docs/testnet-verification.md`](docs/testnet-verification.md).
+
+**Envio indexer (Envio Cloud)**
+- GraphQL endpoint: `https://indexer.dev.hyperindex.xyz/f3fbca0/v1/graphql`
+- Project: <https://envio.dev/app/avishrakshe/turn> (deploys from the `envio` branch; source in [`indexer/`](indexer/))
+
+```bash
+curl -s https://indexer.dev.hyperindex.xyz/f3fbca0/v1/graphql -H 'content-type: application/json' \
+  -d '{"query":"{ Circle { id status currentRound healthScore currencies } GlobalStats { members totalSaved } }"}'
+```
+
+## Local setup
+
+Run the whole backend locally (anvil + contracts + relayer + seeded circle + Envio indexer at
+http://localhost:8080): `bash scripts/local-up.sh`, and stop it with `bash scripts/local-down.sh`.
+
+Developed in WSL2 (Ubuntu) with [Foundry](https://getfoundry.sh) ≥ 1.8, Node 24 and pnpm.
+
+```bash
+git clone --recurse-submodules https://github.com/avishrakshe/Turn.git
+cd Turn/contracts
+forge build
+forge test                  # unit, fuzz, scenario, invariant (≈ 3 s)
+forge test --gas-report
+forge coverage --ir-minimum --no-match-coverage "(test|script)/"
+```
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in the values. `.env` is gitignored, so never commit

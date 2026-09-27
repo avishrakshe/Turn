@@ -34,13 +34,17 @@ export function ContractAddresses() {
           <div className="border-line mt-2 overflow-x-auto rounded-2xl border">
             <table className="w-full text-sm">
               <tbody>
-                {Object.entries(d.contracts).map(([name, address]) => (
+                {d.contracts.map(([name, address]) => (
                   <tr key={name} className="border-line border-b last:border-0">
                     <th scope="row" className="px-4 py-3 text-start font-semibold">{name}</th>
                     <td className="px-4 py-3">
-                      <a href={`${d.explorer}/address/${address}`} className="text-teal-ink font-mono text-xs break-all underline underline-offset-4">
-                        {address}
-                      </a>
+                      {d.explorer ? (
+                        <a href={`${d.explorer}/address/${address}`} className="text-teal-ink font-mono text-xs break-all underline underline-offset-4">
+                          {address}
+                        </a>
+                      ) : (
+                        <code className="font-mono text-xs break-all">{address}</code>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -23,4 +23,6 @@ const CHAINS: Record<string, { name: string; explorer: string }> = {
   "143": { name: "Monad", explorer: "https://monadvision.com" },
 };
 
-export const CHAIN = CHAINS[process.env.NEXT_PUBLIC_CHAIN_ID ?? ""] ?? null;
+export const chainInfo = (chainId: number | string) => CHAINS[String(chainId)] ?? null;
+
+export const CHAIN = chainInfo(process.env.NEXT_PUBLIC_CHAIN_ID ?? "");

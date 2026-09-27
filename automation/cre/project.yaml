@@ -1,0 +1,20 @@
+# ==========================================================================
+# CRE PROJECT SETTINGS FILE — Turn
+# ==========================================================================
+# Monad testnet chain name/selector from the CRE SDK's network table:
+#   monad-testnet (chain 10143, selector 2183018362218727504); supported from CLI v1.30 / TS SDK v1.19.
+staging-settings:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz
+
+# Same as staging, but with a (gitignored) config that has a real Telegram chat id for demos.
+demo-settings:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz
+
+production-settings:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz

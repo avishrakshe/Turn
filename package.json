@@ -1,12 +1,19 @@
 {
   "name": "turn",
   "private": true,
-  "packageManager": "pnpm@11.25.0",
-  "engines": {
-    "node": ">=24"
-  },
+  "type": "module",
+  "description": "Turn — Save together. Take turns. Onchain savings circles on Monad.",
   "scripts": {
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test",
+    "abi": "node contracts/scripts/export-abis.mjs",
+    "test": "pnpm contracts:test && pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
     "site:dev": "pnpm --filter @turn/site dev",
     "site:build": "pnpm --filter @turn/site build"
-  }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.6.0"
 }

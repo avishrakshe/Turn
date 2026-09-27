@@ -1,2 +1,18 @@
 packages:
+  - contracts
+  - relayer
+  - automation
+  - web
   - site
+# indexer/ is a standalone pnpm project (Envio Cloud builds it from its own directory with pnpm 10.32.0).
+
+allowBuilds:
+  esbuild: true
+  unrs-resolver: false
+  sharp: false
+
+minimumReleaseAgeExclude:
+  - '@vitest/mocker@5.0.2'
+  - '@vitest/spy@5.0.2'
+  - viem@2.56.9
+  - vitest@5.0.2

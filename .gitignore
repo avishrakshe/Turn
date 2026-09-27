@@ -30,13 +30,12 @@ next-env.d.ts
 # ---- Foundry ----
 contracts/out/
 contracts/cache/
-contracts/broadcast/*/31337/
-contracts/broadcast/**/dry-run/
+contracts/broadcast/
+contracts/deployments/31337.json
 lcov.info
 
 # ---- Envio ----
 indexer/generated/
-indexer/.envio/
 
 # ---- OS / editor ----
 .DS_Store
@@ -46,3 +45,11 @@ Thumbs.db
 !.vscode/extensions.json
 *.swp
 *.log
+
+# ---- Local stack (scripts/local-up.sh) ----
+.local/
+
+# ---- CRE build output ----
+automation/.cre-build/
+.cre_build_tmp.js
+automation/cre/turn-keeper/config.demo.json
