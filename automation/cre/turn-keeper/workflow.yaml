@@ -1,0 +1,18 @@
+# ==========================================================================
+# CRE WORKFLOW SETTINGS FILE — Turn keeper
+# ==========================================================================
+staging-settings:
+  user-workflow:
+    workflow-name: "turn-keeper-staging"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: "../secrets.yaml"
+
+production-settings:
+  user-workflow:
+    workflow-name: "turn-keeper-production"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: "../secrets.yaml"

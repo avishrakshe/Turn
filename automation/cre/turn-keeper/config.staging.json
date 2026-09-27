@@ -1,0 +1,13 @@
+{
+  "schedule": "0 * * * * *",
+  "chainSelectorName": "monad-testnet",
+  "isTestnet": true,
+  "factory": "0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb",
+  "keeper": "0x92B4984540a62278051a832C3370223244080771",
+  "maxCircles": 25,
+  "maxJobs": 4,
+  "gasLimit": "6000000",
+  "fxUrl": "https://open.er-api.com/v6/latest/USD",
+  "currencies": ["INR", "AED", "GBP", "EUR", "USD"],
+  "telegramChatId": ""
+}

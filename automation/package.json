@@ -1,0 +1,26 @@
+{
+  "name": "@turn/automation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Turn automation: Chainlink CRE workflow (primary) and a Node fallback keeper sharing one decision rule.",
+  "scripts": {
+    "keeper": "tsx --env-file-if-exists=../.env keeper/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "cre:install": "cd cre/turn-keeper && bun install",
+    "cre:compile": "cd cre/turn-keeper && bun x cre-compile main.ts ../../.cre-build/turn-keeper.wasm",
+    "cre:simulate": "cd cre && cre workflow simulate turn-keeper --target staging-settings"
+  },
+  "dependencies": {
+    "@turn/contracts": "workspace:*",
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@turn/relayer": "workspace:*",
+    "@types/node": "24.13.6",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  }
+}

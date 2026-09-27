@@ -48,3 +48,7 @@ Thumbs.db
 
 # ---- Local stack (scripts/local-up.sh) ----
 .local/
+
+# ---- CRE build output ----
+automation/.cre-build/
+.cre_build_tmp.js
