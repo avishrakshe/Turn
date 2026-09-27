@@ -17,6 +17,10 @@ side by side with `en.ts`, or in the app itself: Settings → Language.
   marks are needed in the catalog.
 - Word choice for the circle itself: कमेटी (hi), ചിട്ടി (ml), சீட்டு (ta), کمیٹی (ur).
 
+- New since the first drafts: the `install` section ("Get the app" and the iPhone and Android steps),
+  `join.statLabels`, and the reworded `welcome.lead`. Button names in the install steps
+  ("Add to Home Screen", "Install app") stay in English, because that's how the phone shows them.
+
 - [ ] **Hindi (hi)**: `site/lib/i18n/hi.ts`
 - [ ] **Malayalam (ml)**: `site/lib/i18n/ml.ts`
 - [ ] **Tamil (ta)**: `site/lib/i18n/ta.ts`

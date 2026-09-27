@@ -13,7 +13,7 @@ import { type Frequency, MAX_MEMBERS, MIN_MEMBERS, TEMPLATES, type TemplateId } 
 import { cn } from "@/lib/cn";
 import type { Mode } from "@/lib/economics/engine";
 import { useMessages, useT } from "@/lib/i18n";
-import { formatMoney } from "@/lib/money";
+import { currencyLocale, formatMoney, formatMoneyParts } from "@/lib/money";
 import { useApp } from "./AppProvider";
 
 export function CreateFlow() {
@@ -35,6 +35,8 @@ export function CreateFlow() {
   const [busy, setBusy] = useState(false);
 
   const money = (x: number) => formatMoney(x, currency);
+  const symbol = formatMoneyParts(0, currency).find((p) => p.type === "currency")?.value ?? currency;
+  const grouped = (x: number) => new Intl.NumberFormat(currencyLocale[currency]).format(x);
   const periodWord = t(`create.frequencyWord.${frequency}`);
   const duration = t(frequency === "monthly" ? "common.months" : "common.weeks", { count: members });
   const canNext = step === 0 ? template !== null : step === 1 ? amount > 0 : step === 2 ? true : name.trim() !== "" && yourName.trim() !== "";
@@ -118,13 +120,20 @@ export function CreateFlow() {
             <label htmlFor="amount" className="text-sm font-semibold">
               {t("create.amountLabel")} ({currency})
             </label>
-            <input
-              id="amount"
-              inputMode="decimal"
-              value={amount === 0 ? "" : String(amount)}
-              onChange={(e) => setAmount(Math.max(0, Number(e.target.value.replace(/[^\d.]/g, "")) || 0))}
-              className="tabular border-line-strong bg-paper-raised font-display min-h-16 rounded-2xl border px-5 text-3xl"
-            />
+            <div className="border-line-strong bg-paper-raised focus-within:border-teal focus-within:ring-teal-soft flex min-h-16 items-center gap-2 rounded-2xl border px-5 transition-[border-color,box-shadow] focus-within:ring-4">
+              <span aria-hidden className="text-ink-muted text-2xl font-medium">
+                {symbol}
+              </span>
+              <input
+                id="amount"
+                inputMode="numeric"
+                autoComplete="off"
+                // Grouped as the person reads money (₹1,00,000 for rupees); only digits are kept.
+                value={amount === 0 ? "" : grouped(amount)}
+                onChange={(e) => setAmount(Math.min(10_000_000, Number(e.target.value.replace(/\D/g, "")) || 0))}
+                className="tabular font-display min-w-0 flex-1 bg-transparent text-3xl outline-none"
+              />
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <span id="members-label" className="text-sm font-semibold">
@@ -237,7 +246,13 @@ export function CreateFlow() {
       )}
 
       {step > 0 && (
-        <div className={cn("bg-paper/95 sticky -mx-4 px-4 py-3", profile ? "bottom-16 sm:bottom-0" : "bottom-0")}>
+        // Sits just above the tab bar (and the phone's home indicator), fading the content under it.
+        <div
+          className={cn(
+            "from-paper via-paper sticky -mx-4 bg-gradient-to-t via-70% to-transparent px-4 pt-6 pb-3",
+            profile ? "bottom-[calc(4.4rem+env(safe-area-inset-bottom))] sm:bottom-0" : "bottom-[env(safe-area-inset-bottom)]",
+          )}
+        >
           {step < 3 ? (
             <Button size="lg" className="w-full" onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
               {t("common.next")}

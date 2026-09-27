@@ -7,6 +7,7 @@ export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL || (vercelHost ? `https://${vercelHost}` : "http://localhost:3000")
 ).replace(/\/$/, "");
 export const APP_PATH = "/app";
+export const GET_APP_PATH = "/app/get";
 
 export const TAGLINE = "Save together. Take turns.";
 export const DESCRIPTION =

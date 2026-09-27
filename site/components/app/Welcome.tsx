@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TurnRing } from "@/components/ring/TurnRing";
@@ -10,6 +11,7 @@ import { codeFromLink, encodeInvite } from "@/lib/app/invite";
 import { AUSD_UNIT, FALLBACK_RATES } from "@/lib/app/money";
 import { store } from "@/lib/app/store";
 import { useT } from "@/lib/i18n";
+import { useInstall } from "@/lib/pwa";
 import type { DisplayCurrency } from "@/lib/money";
 import { LanguagePicker } from "./LanguagePicker";
 
@@ -23,6 +25,7 @@ export function Welcome() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [link, setLink] = useState("");
   const [error, setError] = useState(false);
+  const install = useInstall();
   useRates(); // warm the exchange rates for the next screen
 
   useEffect(() => store.markOpened(), []);
@@ -124,6 +127,15 @@ export function Welcome() {
           </Button>
           <p className="text-ink-muted text-xs">{t("welcome.sampleNote")}</p>
         </div>
+        {!install.standalone && (
+          <Link href="/app/get" className="text-teal-ink mx-auto inline-flex min-h-11 items-center gap-2 font-semibold underline-offset-4 hover:underline">
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+              <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+              <path d="M10.5 18.5h3" />
+            </svg>
+            {t("install.cardTitle")}
+          </Link>
+        )}
       </div>
     </div>
   );

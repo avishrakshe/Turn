@@ -16,7 +16,12 @@ export function ShareInvite({ circle: c }: { circle: CircleRec }) {
   const { fmt } = useMoney();
   const currency = useStore((s) => s.prefs.currency);
   const [origin, setOrigin] = useState("");
-  useEffect(() => setOrigin(window.location.origin), []);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    // Phones and tablets only: desktop share sheets are rarely where people's family chats are.
+    setCanShare(typeof navigator.share === "function" && matchMedia("(pointer: coarse)").matches);
+  }, []);
 
   const code = encodeInvite({
     v: 1,
@@ -43,9 +48,28 @@ export function ShareInvite({ circle: c }: { circle: CircleRec }) {
       <div className="bg-paper-sunk text-ink-muted truncate rounded-xl px-4 py-3 font-mono text-xs" title={url}>
         {url || "…"}
       </div>
+      {/* On phones the system share sheet is the one button people expect; copy and WhatsApp stay as fallbacks. */}
+      {canShare && (
+        <Button
+          size="lg"
+          onClick={async () => {
+            try {
+              await navigator.share({ title: c.name, text });
+            } catch {
+              // Share sheet dismissed.
+            }
+          }}
+        >
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 3v12M8 7l4-4 4 4M7 10H5v10h14V10h-2" />
+          </svg>
+          {t("circle.shareInvite")}
+        </Button>
+      )}
       <div className="grid gap-2 sm:grid-cols-2">
         <Button
           size="lg"
+          variant={canShare ? "outline" : "primary"}
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(url);
@@ -61,8 +85,11 @@ export function ShareInvite({ circle: c }: { circle: CircleRec }) {
           href={`https://wa.me/?text=${encodeURIComponent(text)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="border-line-strong bg-paper-raised inline-flex min-h-13 items-center justify-center rounded-pill border px-6 font-semibold"
+          className="border-line-strong bg-paper-raised inline-flex min-h-13 items-center justify-center gap-2 rounded-pill border px-6 font-semibold"
         >
+          <svg viewBox="0 0 24 24" className="size-5 text-[#1f9d55]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden>
+            <path d="M4 20l1.3-3.9A8 8 0 1112 20a8 8 0 01-3.9-1z" />
+          </svg>
           {t("common.shareWhatsApp")}
         </a>
       </div>

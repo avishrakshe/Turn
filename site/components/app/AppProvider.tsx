@@ -7,6 +7,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
 import { useStore } from "@/lib/app/hooks";
 import { I18nProvider, langInfo, translate, useT } from "@/lib/i18n";
+import { registerServiceWorker } from "@/lib/pwa";
 import { scriptFontClass } from "@/lib/script-fonts";
 import { FaceGlyph } from "./FaceGlyph";
 
@@ -43,6 +44,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (font) html.classList.remove(font);
     };
   }, [lang, dir, script]);
+
+  useEffect(registerServiceWorker, []);
 
   const labels = useMemo(
     () => ({ close: translate(lang, "common.close"), dismiss: translate(lang, "common.dismiss"), notifications: translate(lang, "common.notifications") }),

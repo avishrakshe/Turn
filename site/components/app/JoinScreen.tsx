@@ -77,12 +77,23 @@ export function JoinScreen({ code }: { code: string }) {
         />
       </div>
 
-      <Card className="flex flex-col gap-1 text-center">
-        <p className="text-lg font-semibold">
-          {t("join.summary", { people: t("common.people", { count: invite.n }), amount: fmt(contribution), frequency, duration })}
-        </p>
-        <p className="text-ink-muted">{t("join.receive", { pot: fmt(contribution * BigInt(invite.n)) })}</p>
-      </Card>
+      <section className="bg-paper-raised border-line shadow-soft overflow-hidden rounded-card border">
+        {/* The full sentence for screen readers; the grid below is the same facts laid out to scan. */}
+        <p className="sr-only">{t("join.summary", { people: t("common.people", { count: invite.n }), amount: fmt(contribution), frequency, duration })}</p>
+        <dl aria-hidden className="divide-line grid grid-cols-3 divide-x text-center">
+          {[
+            { value: fmt(contribution), label: frequency },
+            { value: String(invite.n), label: t("join.statLabels.people") },
+            { value: String(invite.n), label: t(`join.statLabels.${invite.frequency}`) },
+          ].map((s, i) => (
+            <div key={i} className="flex flex-col gap-0.5 px-2 py-4">
+              <dd className="tabular text-lg font-semibold">{s.value}</dd>
+              <dt className="text-ink-muted text-xs">{s.label}</dt>
+            </div>
+          ))}
+        </dl>
+        <p className="bg-teal-soft text-teal-ink px-4 py-3 text-center text-sm font-semibold">{t("join.receive", { pot: fmt(contribution * BigInt(invite.n)) })}</p>
+      </section>
 
       <Card tone="sunk" className="flex gap-3">
         <svg viewBox="0 0 24 24" className="text-success mt-0.5 size-6 shrink-0" aria-hidden>

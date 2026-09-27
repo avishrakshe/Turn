@@ -10,6 +10,7 @@ import { creditRecord, payoutOf, yourTurn } from "@/lib/app/selectors";
 import { score } from "@/lib/economics/trust";
 import { useT } from "@/lib/i18n";
 import { CircleCard } from "./CircleCard";
+import { InstallCard } from "./InstallCard";
 
 export function Home() {
   const t = useT();
@@ -69,6 +70,8 @@ export function Home() {
       <ButtonLink href="/app/create" size="lg">
         {t("home.start")}
       </ButtonLink>
+
+      <InstallCard />
     </div>
   );
 }

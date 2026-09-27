@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: { default: `Turn · ${TAGLINE}`, template: "%s · Turn" },
   description: DESCRIPTION,
   applicationName: "Turn",
+  // Installed on iPhone: full screen, named "Turn" on the home screen.
+  appleWebApp: { capable: true, title: "Turn", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   openGraph: {
     type: "website",
     siteName: "Turn",
@@ -28,7 +31,8 @@ export const viewport: Viewport = {
 
 // Applies a saved theme choice before first paint so there's no flash. Without a saved
 // choice the CSS follows prefers-color-scheme.
-const themeScript = `try{var t=localStorage.getItem("turn-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+// Also keeps Chrome's install prompt if it fires before the app's code loads (see lib/pwa.ts).
+const themeScript = `try{var t=localStorage.getItem("turn-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__turnInstallPrompt=e});`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

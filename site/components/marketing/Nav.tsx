@@ -5,7 +5,7 @@ import { useEffect, useId, useState } from "react";
 import { TurnLogo } from "@/components/ring/TurnMark";
 import { ButtonLink } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import { APP_PATH } from "@/lib/site";
+import { APP_PATH, GET_APP_PATH } from "@/lib/site";
 
 const LINKS = [
   { href: "/#how", label: "How it works" },
@@ -54,7 +54,10 @@ export function Nav() {
             </li>
           ))}
         </ul>
-        <div className="ms-auto hidden sm:block lg:ms-2">
+        <div className="ms-auto hidden items-center gap-2 sm:flex lg:ms-2">
+          <ButtonLink href={GET_APP_PATH} variant="outline">
+            Get the app
+          </ButtonLink>
           <ButtonLink href={APP_PATH}>Start a circle</ButtonLink>
         </div>
         <button
@@ -83,9 +86,12 @@ export function Nav() {
               </Link>
             </li>
           ))}
-          <li className="pt-3 pb-2 sm:hidden">
+          <li className="flex flex-col gap-2 pt-3 pb-2 sm:hidden">
             <ButtonLink href={APP_PATH} size="lg" className="w-full">
               Start a circle
+            </ButtonLink>
+            <ButtonLink href={GET_APP_PATH} size="lg" variant="outline" className="w-full">
+              Get the app
             </ButtonLink>
           </li>
         </ul>

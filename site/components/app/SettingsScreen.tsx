@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Sheet } from "@/components/ui/Sheet";
@@ -12,6 +12,7 @@ import { roundDate } from "@/lib/app/selectors";
 import { type CircleRec, store } from "@/lib/app/store";
 import { useT } from "@/lib/i18n";
 import type { DisplayCurrency } from "@/lib/money";
+import { promptInstall, useInstall } from "@/lib/pwa";
 import { useApp } from "./AppProvider";
 import { LanguagePicker } from "./LanguagePicker";
 
@@ -30,6 +31,7 @@ export function SettingsScreen() {
   const order = useStore((s) => s.order);
   const [revoking, setRevoking] = useState<CircleRec | null>(null);
   const [recovery, setRecovery] = useState(false);
+  const install = useInstall();
   const running = order.map((id) => circles[id]!).filter((c) => c?.engine && c.engine.status !== "COMPLETED");
 
   return (
@@ -59,6 +61,20 @@ export function SettingsScreen() {
           className="flex w-full"
         />
       </Section>
+
+      {install.ready && !install.standalone && (
+        <Section title={t("install.settingsTitle")} hint={t("install.settingsHint")}>
+          {install.canPrompt ? (
+            <Button variant="secondary" className="self-start" onClick={() => promptInstall()}>
+              {t("install.install")}
+            </Button>
+          ) : (
+            <ButtonLink href="/app/get" variant="secondary" className="self-start">
+              {t("install.cardTitle")}
+            </ButtonLink>
+          )}
+        </Section>
+      )}
 
       <Section title={t("settings.telegram")} hint={t("settings.telegramBody")}>
         <div className="flex items-center justify-between gap-3">

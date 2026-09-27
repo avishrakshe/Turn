@@ -21,8 +21,12 @@ export function ScoreScreen() {
   const pct = payments ? Math.round((record.paymentsOnTime / payments) * 100) : 0;
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
-  const verifyUrl = `${origin}/credit/${state.profile?.address ?? ""}`;
-  const line = t("score.cardLine", { circles: t("score.circlesWord", { count: record.circlesCompleted }), pct });
+  const address = state.profile?.address ?? "";
+  const verifyUrl = `${origin}/credit/${address}`;
+  // Shown shortened; the full link is what gets copied and shared.
+  const verifyLabel = `${origin.replace(/^https?:\/\//, "")}/credit/${address.slice(0, 6)}…${address.slice(-4)}`;
+  // The card sums up the whole record, so it counts every circle joined (the stats below split them out).
+  const line = t("score.cardLine", { circles: t("score.circlesWord", { count: record.circlesJoined }), pct });
 
   async function share() {
     const text = `${t("score.title")} ${s} · ${line} · ${verifyUrl}`;
@@ -45,8 +49,10 @@ export function ScoreScreen() {
       </div>
 
       <figure className="bg-teal text-on-teal shadow-lift relative aspect-[1.6/1] overflow-hidden rounded-[1.6rem] p-6">
-        <svg aria-hidden viewBox="0 0 200 200" className="absolute -end-16 -top-16 size-64 opacity-20">
-          <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="2 8" strokeLinecap="round" />
+        {/* Opacity on the stroke, not the element: an opacity layer inside a rounded clip shows a hard-edged box in Chrome. */}
+        <svg aria-hidden viewBox="0 0 200 200" className="absolute -end-16 -top-16 size-64">
+          <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeOpacity="0.22" strokeWidth="2" strokeDasharray="2 8" strokeLinecap="round" />
+          <circle cx="100" cy="100" r="46" fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1.5" />
         </svg>
         <div className="relative flex h-full flex-col">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -71,7 +77,7 @@ export function ScoreScreen() {
         <Button size="lg" onClick={share}>
           {t("score.share")}
         </Button>
-        <p className="text-ink-muted text-sm break-all">{t("score.verify", { url: verifyUrl })}</p>
+        <p className="text-ink-muted text-sm">{t("score.verify", { url: verifyLabel })}</p>
         <p className="text-ink-muted text-xs">{t("score.demoNote")}</p>
       </div>
       <Link href="/docs/turn-score" className="text-teal-ink min-h-11 font-semibold underline underline-offset-4">
