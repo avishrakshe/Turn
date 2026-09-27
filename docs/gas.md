@@ -19,6 +19,21 @@ overhead per step.
 | Keeper: payout (with discount credits + reserve) | 335,406 | 450,000 |
 | Keeper: markDefault (covered by collateral) | 143,588 | 250,000 |
 
+## Measured on Monad testnet (2026-09-26, `relayer/scripts/verify-7702.ts`)
+
+Monad receipts report gas used = gas limit, because the limit is what's billed. Its opcode pricing (notably cold
+storage access) makes real costs about 25–30% higher than the local EVM numbers above:
+
+| Flow (3-member circle) | Local EVM | Monad testnet (billed) |
+| --- | --- | --- |
+| Relayed type-4: delegate + approve + createCircle + grantPull | ~666k | 828,845 |
+| Relayed type-4: delegate + approve + join + grantPull | ~282k | 407,137 |
+| Relayed type-4: delegate + approve + join + grantPull (starts circle) | ~495k | 592,676 |
+| Keeper: collect (3 members via pull grants) | — | 767,690 |
+
+So the relayer's per-transaction cap defaults to **1.2M** gas. At about 100 gwei, a gasless join costs the
+relayer about 0.04 MON, and onboarding plus creating a circle about 0.08 MON.
+
 Collection cost grows about linearly with N (roughly 120–130k per member via a pull grant, including the
 CreditRegistry write).
 

@@ -5,8 +5,9 @@ import { getAddress } from "viem";
 // Simulated events for one Turn circle: 3 members in 3 countries, an auction round, auto-pay sessions,
 // a default covered by the deposit and an ejection. Checks the entities the app reads.
 // Addresses are checksummed, as Envio delivers them from real chains (address_format: checksum).
-const FACTORY = getAddress("0x0000000000000000000000000000000000000001");
-const REGISTRY = getAddress("0x0000000000000000000000000000000000000002");
+// The configured (testnet) factory and registry addresses from config.yaml.
+const FACTORY = getAddress("0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb");
+const REGISTRY = getAddress("0x712d913a6fE057ae590da80941557EEbE93E9Bc0");
 const CIRCLE = getAddress("0x00000000000000000000000000000000000c1c1e");
 const PRIYA = getAddress("0x000000000000000000000000000000000000a001"); // INR, in India
 const RAVI = getAddress("0x000000000000000000000000000000000000a002"); // AED, in Dubai
@@ -33,7 +34,7 @@ const params = {
 describe("Turn indexer", () => {
   it("indexes a circle's lifecycle, live auction, sessions, credit and corridors", async (t) => {
     const indexer = createTestIndexer();
-    let block = 100;
+    let block = 65_860_000; // after the configured start block (the testnet deploy block)
     const at = (secs: number) => ({ number: block++, timestamp: T0 + secs });
 
     // Registrations take effect between process() calls in the test harness (in production, same-block

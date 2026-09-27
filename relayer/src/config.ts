@@ -13,7 +13,7 @@ const Env = z.object({
   TOKEN_ADDRESS: hex.length(42).optional(),
   ACCOUNT_IMPLEMENTATION: hex.length(42).optional(),
   /** Hard ceiling for one relayed transaction's gas limit (Monad bills the limit). docs/gas.md */
-  MAX_GAS_PER_TX: z.coerce.bigint().default(1_000_000n),
+  MAX_GAS_PER_TX: z.coerce.bigint().default(1_200_000n),
   /** Per-account sponsored gas per UTC day. */
   DAILY_GAS_PER_ACCOUNT: z.coerce.bigint().default(5_000_000n),
   RATE_LIMIT_PER_IP_PER_MIN: z.coerce.number().int().default(60),

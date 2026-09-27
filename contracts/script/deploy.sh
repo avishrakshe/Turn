@@ -28,8 +28,8 @@ j() { python3 -c "import json;print(json.load(open('$DEP'))['$1'])"; }
 verify "$(j circleImplementation)" src/Circle.sol:Circle
 verify "$(j factory)" src/CircleFactory.sol:CircleFactory \
   "$(cast abi-encode 'c(address,address,address,uint128,uint8)' "$(j token)" "$(j circleImplementation)" "$(j owner)" \
-     "$(cast call "$(j factory)" 'maxContribution()(uint128)' --rpc-url "$RPC")" \
-     "$(cast call "$(j factory)" 'maxMembers()(uint8)' --rpc-url "$RPC")")"
+     "$(cast call "$(j factory)" 'maxContribution()(uint128)' --rpc-url "$RPC" | awk '{print $1}')" \
+     "$(cast call "$(j factory)" 'maxMembers()(uint8)' --rpc-url "$RPC" | awk '{print $1}')")"
 verify "$(j registry)" src/CreditRegistry.sol:CreditRegistry "$(cast abi-encode 'c(address)' "$(j factory)")"
 verify "$(j accountImplementation)" src/TurnAccount.sol:TurnAccount "$(cast abi-encode 'c(address,address)' "$(j token)" "$(j factory)")"
 verify "$(j keeper)" src/TurnKeeper.sol:TurnKeeper "$(cast abi-encode 'c(address,address,address)' "$(j factory)" "$(j creForwarder)" "$(j owner)")"

@@ -47,12 +47,12 @@ contracts:
       - event: PullRevoked
       - event: Pulled
 chains:
-  - id: 10143 # Monad testnet
-    start_block: ${ENVIO_START_BLOCK:-0}
+  - id: 10143 # Monad testnet — addresses from contracts/deployments/10143.json (env vars override for redeploys)
+    start_block: ${ENVIO_START_BLOCK:-65859276}
     contracts:
       - name: CircleFactory
-        address: "${ENVIO_FACTORY_ADDRESS}"
+        address: "${ENVIO_FACTORY_ADDRESS:-0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb}"
       - name: CreditRegistry
-        address: "${ENVIO_REGISTRY_ADDRESS}"
+        address: "${ENVIO_REGISTRY_ADDRESS:-0x712d913a6fE057ae590da80941557EEbE93E9Bc0}"
       - name: Circle
       - name: TurnAccount
