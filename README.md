@@ -51,7 +51,7 @@ Turn/
 | --- | --- |
 | 1. Plan: verified facts, design, interfaces | ✅ [`docs/plan.md`](docs/plan.md) |
 | 2. Contracts + full test suite | ✅ [`contracts/`](contracts/), [`docs/economics.md`](docs/economics.md), [`docs/gas.md`](docs/gas.md) |
-| 3. Relayer, testnet deployment, Envio indexer | ⏳ |
+| 3. Relayer, testnet deployment, Envio indexer | ✅ [`relayer/`](relayer/), [`indexer/`](indexer/), [testnet verification](docs/testnet-verification.md) |
 | 4. Chainlink CRE automation | ⏳ |
 | 5. Web app | ⏳ |
 | 6. Demo, docs, submission | ⏳ |
@@ -70,6 +70,15 @@ Turn/
 | MockAUSD (**test only**, until testnet AUSD) | [`0xf5f909b2d7Da364246D61C307b062844EEF86e9a`](https://testnet.monadvision.com/address/0xf5f909b2d7Da364246D61C307b062844EEF86e9a) |
 
 The gasless design is verified live on testnet: [`docs/testnet-verification.md`](docs/testnet-verification.md).
+
+**Envio indexer (Envio Cloud)**
+- GraphQL endpoint: `https://indexer.dev.hyperindex.xyz/f3fbca0/v1/graphql`
+- Project: <https://envio.dev/app/avishrakshe/turn> (deploys from the `envio` branch; source in [`indexer/`](indexer/))
+
+```bash
+curl -s https://indexer.dev.hyperindex.xyz/f3fbca0/v1/graphql -H 'content-type: application/json' \
+  -d '{"query":"{ Circle { id status currentRound healthScore currencies } GlobalStats { members totalSaved } }"}'
+```
 
 ## Local setup
 
