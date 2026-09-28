@@ -15,7 +15,7 @@ export function Footer() {
     { href: "/terms", label: "Terms" },
   ];
   return (
-    <footer className="border-line border-t">
+    <footer className="site-footer border-line border-t">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-5 py-14 sm:px-8">
         <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <div>

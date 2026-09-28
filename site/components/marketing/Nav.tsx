@@ -37,7 +37,8 @@ export function Nav() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 transition-[background-color,border-color] duration-(--duration-base)",
+        // site-nav: goes dark while the landing film's night stage is under it (see globals.css).
+        "site-nav sticky top-0 z-40 transition-[background-color,border-color,color] duration-(--duration-base)",
         scrolled || open ? "bg-paper/90 border-line border-b backdrop-blur-md" : "border-b border-transparent",
       )}
     >

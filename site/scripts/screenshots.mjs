@@ -20,6 +20,8 @@ const browser = await chromium.launch();
 for (const vp of viewports) {
   for (const theme of ["light", "dark"]) {
     const ctx = await browser.newContext({ ...vp, viewport: { width: vp.width, height: vp.height }, colorScheme: theme, reducedMotion: "reduce" });
+    // Skip the landing page's first-visit intro, so captures show the page itself.
+    await ctx.addInitScript(() => localStorage.setItem("turn-intro", "1"));
     const page = await ctx.newPage();
     for (const p of pages) {
       // "load" rather than "networkidle": Next keeps route prefetches open, which can stall idle detection.

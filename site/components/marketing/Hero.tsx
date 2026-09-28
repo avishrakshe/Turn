@@ -68,6 +68,13 @@ export function Hero() {
           </button>
         </div>
       </div>
+      <a
+        href="#film"
+        className="font-mono text-ink-muted hover:text-ink absolute bottom-4 left-1/2 hidden min-h-11 -translate-x-1/2 items-center gap-2 text-[11px] tracking-[0.2em] whitespace-nowrap uppercase lg:inline-flex"
+      >
+        <span aria-hidden className="bg-marigold size-1.5 rounded-full motion-safe:animate-pulse" />
+        Scroll to watch a circle run
+      </a>
     </section>
   );
 }

@@ -22,12 +22,14 @@ export function Section({
   return (
     <section id={id} aria-labelledby={`${id}-title`} className={cn("scroll-mt-20 py-20 sm:py-28", className)}>
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <ChapterLabel round={round} label={label} />
-        <h2 id={`${id}-title`} className="mt-4 max-w-3xl text-4xl sm:text-5xl">
-          {title}
-        </h2>
-        {intro && <div className="text-ink-muted mt-5 max-w-2xl text-lg">{intro}</div>}
-        {children && <div className="mt-12">{children}</div>}
+        <div className="reveal">
+          <ChapterLabel round={round} label={label} />
+          <h2 id={`${id}-title`} className="mt-4 max-w-3xl text-4xl sm:text-5xl">
+            {title}
+          </h2>
+          {intro && <div className="text-ink-muted mt-5 max-w-2xl text-lg">{intro}</div>}
+        </div>
+        {children && <div className="reveal mt-12">{children}</div>}
       </div>
     </section>
   );

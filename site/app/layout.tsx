@@ -31,8 +31,10 @@ export const viewport: Viewport = {
 
 // Applies a saved theme choice before first paint so there's no flash. Without a saved
 // choice the CSS follows prefers-color-scheme.
-// Also keeps Chrome's install prompt if it fires before the app's code loads (see lib/pwa.ts).
-const themeScript = `try{var t=localStorage.getItem("turn-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__turnInstallPrompt=e});`;
+// Also keeps Chrome's install prompt if it fires before the app's code loads (see lib/pwa.ts),
+// and hides the landing intro (components/marketing/Intro.tsx) for visitors who've seen it or
+// who arrive at a specific section, before it can flash.
+const themeScript = `try{var t=localStorage.getItem("turn-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__turnInstallPrompt=e});try{if(localStorage.getItem("turn-intro")||location.hash)document.documentElement.dataset.intro="seen"}catch(e){document.documentElement.dataset.intro="seen"}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

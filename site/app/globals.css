@@ -33,6 +33,8 @@
      element carrying that class must also re-declare the stack (the font-sans utility),
      because font-family inherits as a resolved value. */
   --font-sans: var(--font-script), var(--font-dm-sans), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  /* Telemetry. JetBrains Mono is only loaded on the landing page; elsewhere this is the system mono. */
+  --font-mono: var(--font-jetbrains, ui-monospace), ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
 
   --radius-card: 1.25rem;
   --radius-pill: 999px;
@@ -189,6 +191,136 @@
   text-transform: uppercase;
   color: var(--marigold-ink);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- Landing intro (components/marketing/Intro.tsx) -------------------------------------------- */
+/* The head script marks returning visitors "seen" before first paint, so the intro never flashes. */
+html[data-intro="seen"] .intro { display: none; }
+html[data-intro="show"] { overflow: hidden; }
+.intro-leave { animation: intro-out 700ms var(--ease-out) forwards; }
+@keyframes intro-out {
+  to { opacity: 0; transform: scale(1.03); visibility: hidden; }
+}
+.intro-gate > * { animation: rise-in 700ms var(--ease-out) both; }
+.intro-gate > :nth-child(2) { animation-delay: 80ms; }
+.intro-gate > :nth-child(3) { animation-delay: 160ms; }
+.intro-gate > :nth-child(4) { animation-delay: 240ms; }
+.intro-gate > :nth-child(5) { animation-delay: 320ms; }
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+/* --- Landing film (components/marketing/CircleFilm.tsx) ----------------------------------------- */
+/* Dusk into the night stage, and dawn back out to paper. The stage is night in both themes. */
+.film-dusk {
+  background: linear-gradient(
+    to bottom,
+    var(--paper),
+    color-mix(in oklab, var(--marigold) 24%, var(--paper)) 24%,
+    #d98b45 44%,
+    #8a3f2a 62%,
+    #3a1c16 80%,
+    #120d0a
+  );
+}
+/* In the dark theme the page is already evening: a low ember glow rather than a bright sunset. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .film-dusk {
+    background: linear-gradient(to bottom, var(--paper), #2a1a12 30%, #4e2618 55%, #26130e 78%, #120d0a);
+  }
+}
+:root[data-theme="dark"] .film-dusk {
+  background: linear-gradient(to bottom, var(--paper), #2a1a12 30%, #4e2618 55%, #26130e 78%, #120d0a);
+}
+.film-dawn {
+  background: linear-gradient(to top, var(--paper), color-mix(in oklab, var(--teal) 12%, var(--paper)) 30%, #1c3430 62%, #13201d 82%, #120d0a);
+}
+.film-stage {
+  color-scheme: dark;
+  --focus: #7dd3c5;
+  color: #f4ebdf;
+}
+.film-label {
+  color: #f4ebdf;
+  text-align: center;
+  white-space: nowrap;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+  padding: 3px 9px 4px;
+  border-radius: 10px;
+  background: rgb(18 13 10 / 0.58);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.film-label [data-status] { color: #bdae9e; margin-top: 2px; }
+.film-label[data-tone="ok"] [data-status] { color: #6acf96; }
+.film-label[data-tone="turn"] [data-status] { color: #f4be5a; }
+.film-label[data-tone="warn"] [data-status] { color: #f2b75e; }
+.film-chip {
+  border-color: rgb(255 255 255 / 0.2);
+  color: #f4ebdf;
+  transition: color 200ms, border-color 200ms, background-color 200ms;
+}
+.film-chip[data-tone="turn"] { border-color: #f2b441; color: #f4be5a; background: rgb(242 180 65 / 0.12); }
+.film-chip[data-tone="sealed"] { border-color: #6fcbbc; color: #7dd3c5; background: rgb(111 203 188 / 0.1); }
+.film-chip[data-tone="warn"] { border-color: #f2b75e; color: #f2b75e; background: rgb(242 183 94 / 0.12); }
+.film-caption {
+  background: rgb(18 13 10 / 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.film-caption:empty { display: none; }
+.film-tick { color: #8f8071; transition: color 200ms, background-color 200ms; }
+.film-tick:hover { color: #f4ebdf; }
+.film-tick[data-state="past"] { color: #bdae9e; }
+.film-tick[data-state="on"] { color: #120d0a; background: #f2b441; }
+.film-bars > span { height: 30%; }
+.film-bars.is-on > span { animation: film-bars 0.9s ease-in-out infinite alternate; }
+@keyframes film-bars {
+  from { height: 25%; }
+  to { height: 100%; }
+}
+
+/* --- Turn Score card (components/marketing/ScoreCard3D.tsx) ------------------------------------ */
+.score-glare {
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 40%), rgb(255 255 255 / 0.34), rgb(255 255 255 / 0) 55%);
+  mix-blend-mode: soft-light;
+}
+/* Pinned notes float above the card's face, turn with it, and vanish when it's turned over. */
+.score-pin {
+  transform: translateZ(38px);
+  backface-visibility: hidden;
+}
+.score-card:focus-visible { outline-offset: 6px; border-radius: 1.6rem; }
+
+/* While the film's night stage is under the nav, the nav wears the dark theme too. */
+html[data-night] .site-nav {
+  color-scheme: dark;
+  --paper: #120d0a;
+  --paper-raised: #251e18;
+  --paper-sunk: #1b1612;
+  --line: #3a3028;
+  --line-strong: #54473b;
+  --ink: #f4ebdf;
+  --ink-muted: #bdae9e;
+  --teal: #5fc4b4;
+  --marigold: #f2b441;
+  --marigold-hover: #f6c261;
+  --on-marigold: #24170a;
+  --focus: #7dd3c5;
+  color: var(--ink);
+}
+
+/* Sections rise in as they scroll into view, where the browser can tie animation to scroll. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
 }
 
 /* Fraunces is Latin-only, and its metric fallback is a local Times New Roman, which has Arabic

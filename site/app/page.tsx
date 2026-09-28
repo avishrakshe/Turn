@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { type Chapter, Chapters } from "@/components/marketing/Chapters";
+import { CircleFilm } from "@/components/marketing/CircleFilm";
 import { Corridors } from "@/components/marketing/Corridors";
 import { Faq } from "@/components/marketing/Faq";
 import { FinalCta } from "@/components/marketing/FinalCta";
 import { Footer } from "@/components/marketing/Footer";
 import { Hero } from "@/components/marketing/Hero";
+import { Intro } from "@/components/marketing/Intro";
 import { Languages } from "@/components/marketing/Languages";
 import { LiveStats } from "@/components/marketing/LiveStats";
 import { Nav } from "@/components/marketing/Nav";
@@ -14,6 +16,7 @@ import { Section } from "@/components/marketing/Section";
 import { Simulation } from "@/components/marketing/Simulation";
 import { TurnScore } from "@/components/marketing/TurnScore";
 import { Amount } from "@/components/ui/Amount";
+import { jetbrainsMono } from "@/lib/fonts";
 import { DESCRIPTION, TAGLINE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -84,13 +87,15 @@ const CHAPTERS: Chapter[] = [
 
 export default function Home() {
   return (
-    <>
-      <a href="#main" className="bg-ink text-paper sr-only z-50 rounded-lg px-4 py-3 font-semibold focus:not-sr-only focus:fixed focus:start-3 focus:top-3">
+    <div className={jetbrainsMono.variable}>
+      <Intro />
+      <a href="#main" className="skip-link bg-ink text-paper sr-only z-50 rounded-lg px-4 py-3 font-semibold focus:not-sr-only focus:fixed focus:start-3 focus:top-3">
         Skip to content
       </a>
       <Nav />
       <main id="main">
         <Hero />
+        <CircleFilm />
         <Chapters chapters={CHAPTERS} />
         <LiveStats />
         <Section
@@ -119,6 +124,6 @@ export default function Home() {
         <FinalCta />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
