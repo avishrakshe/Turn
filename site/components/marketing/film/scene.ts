@@ -47,7 +47,9 @@ const TOKEN_R = 0.5;
 const TOKEN_H = 0.16;
 const TABLE_R = 4.3;
 /** Every shot's distance is scaled by this, so the whole table fits between the HUD and the captions. */
-const FRAME = 1.3;
+const FRAME = 1.34;
+/** How far the picture is raised, as a share of the screen's height. */
+const LIFT = 0.06;
 const COIN_R = 0.25;
 const COIN_H = 0.06;
 const STEP = 0.066; // stack spacing
@@ -135,8 +137,8 @@ function buildShots(film: Film): Shot[] {
     shot(at("reveal", 5, 0.7), 196, 36, 10.5),
     shot(at("reveal", last, 0.7), 248, 34, 9.6, [-1, 0.5, -0.6]),
     shot(at("complete", last + 1, 0.6), 300, 50, 12),
-    // Pulled back and aimed a little below centre, so the mark sits clear of the caption.
-    shot(at("outro", last + 1, 0.55), 360, 88, 17.5, [0, 0, 1.1], 32),
+    // Pulled back so the mark sits clear of the caption (the frame's LIFT already raises it).
+    shot(at("outro", last + 1, 0.55), 360, 88, 17.5, [0, 0, 0.3], 32),
   ];
 }
 
@@ -698,6 +700,9 @@ export function createFilmScene(canvas: HTMLCanvasElement, film: Film, opts: Sce
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    // Frame the table a little above centre: the caption and chapter rail take the bottom of
+    // the screen, while the telemetry keeps to the top corners.
+    camera.setViewOffset(w, h, 0, h * LIFT, w, h);
     camera.updateProjectionMatrix();
   }
   resize();
