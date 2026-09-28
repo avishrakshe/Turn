@@ -475,12 +475,13 @@ export function createFilmScene(canvas: HTMLCanvasElement, film: Film, opts: Sce
     // Camera.
     const c = cameraAt(shots, t);
     const az = (c.az * Math.PI) / 180;
-    const el = (c.el * Math.PI) / 180;
-    camera.fov = c.fov;
-    // Narrow screens pull back to fit the table's width; seen from straight above the table is
-    // round, so less pull-back is needed.
+    // Narrow screens pull back to fit the table's width, and look down more steeply so the
+    // table uses the tall screen. Seen from straight above it's round, so less pull-back.
     const fit = Math.max(0.4, Math.min(1, camera.aspect / 1.15));
-    camera.zoom = fit + (Math.min(1, fit * 1.7) - fit) * smooth(55, 85, c.el);
+    const elDeg = c.el + (88 - c.el) * (1 - fit) * 0.45;
+    const el = (elDeg * Math.PI) / 180;
+    camera.fov = c.fov;
+    camera.zoom = fit + (Math.min(1, fit * 1.7) - fit) * smooth(55, 85, elDeg);
     camera.position.set(c.tx + c.dist * Math.cos(el) * Math.sin(az), c.ty + c.dist * Math.sin(el), c.tz + c.dist * Math.cos(el) * Math.cos(az));
     const s = opts.reducedMotion ? 0 : shake;
     if (s > 0.001) {
@@ -687,7 +688,8 @@ export function createFilmScene(canvas: HTMLCanvasElement, film: Film, opts: Sce
         x: (projected.x * 0.5 + 0.5) * w,
         y: (-projected.y * 0.5 + 0.5) * h,
         alpha: projected.z < 1 ? joined : 0,
-        scale: Math.max(0.85, Math.min(1.15, (9.5 * FRAME) / d)),
+        // Smaller when the camera has pulled back (narrow screens), so labels don't bury the table.
+        scale: Math.max(0.85, Math.min(1.15, (9.5 * FRAME) / d)) * (0.55 + 0.45 * camera.zoom),
       };
     }
   }
