@@ -6,8 +6,11 @@ import { getAddress } from "viem";
 // a default covered by the deposit and an ejection. Checks the entities the app reads.
 // Addresses are checksummed, as Envio delivers them from real chains (address_format: checksum).
 // The configured (testnet) factory and registry addresses from config.yaml.
-const FACTORY = getAddress("0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb");
-const REGISTRY = getAddress("0x712d913a6fE057ae590da80941557EEbE93E9Bc0");
+const FACTORY = getAddress("0xCC90d683Aa8945dd7DD8C0be117e4b2592ECc2E0");
+const REGISTRY = getAddress("0x9824f180Af7D8c03de3c366F688eEA2d6193aDB7");
+const AUSD = getAddress("0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC");
+const FAUCET = getAddress("0xd236c18D274E54FAccC3dd9DDA4b27965a73ee6C");
+const STRANGER = getAddress("0x000000000000000000000000000000000000b0b0");
 const CIRCLE = getAddress("0x00000000000000000000000000000000000c1c1e");
 const PRIYA = getAddress("0x000000000000000000000000000000000000a001"); // INR, in India
 const RAVI = getAddress("0x000000000000000000000000000000000000a002"); // AED, in Dubai
@@ -34,7 +37,7 @@ const params = {
 describe("Turn indexer", () => {
   it("indexes a circle's lifecycle, live auction, sessions, credit and corridors", async (t) => {
     const indexer = createTestIndexer();
-    let block = 65_860_000; // after the configured start block (the testnet deploy block)
+    let block = 70_171_000; // after the configured start block (the testnet deploy block)
     const at = (secs: number) => ({ number: block++, timestamp: T0 + secs });
 
     // Registrations take effect between process() calls in the test harness (in production, same-block
@@ -99,6 +102,28 @@ describe("Turn indexer", () => {
         },
       },
     });
+
+    // AUSD transfers: only person-to-person ones touching a member are kept (sends, faucet top-ups).
+    await indexer.process({
+      chains: {
+        10143: {
+          simulate: [
+            { contract: "AUSD", event: "Transfer", srcAddress: AUSD, block: at(710), transaction: tx(10), params: { from: RAVI, to: PRIYA, value: 50n * 1_000_000n } },
+            { contract: "AUSD", event: "Transfer", srcAddress: AUSD, block: at(711), transaction: tx(11), params: { from: FAUCET, to: MEERA, value: 10_000n * 1_000_000n } },
+            { contract: "AUSD", event: "Transfer", srcAddress: AUSD, block: at(712), transaction: tx(12), params: { from: PRIYA, to: CIRCLE, value: C } },
+            { contract: "AUSD", event: "Transfer", srcAddress: AUSD, block: at(713), transaction: tx(13), params: { from: STRANGER, to: FAUCET, value: 1n } },
+          ],
+        },
+      },
+    });
+    const transfers = await indexer.Transfer.getAll();
+    t.expect(transfers.map((x) => [x.from, x.to, x.amount]).sort()).toEqual(
+      [
+        [FAUCET, MEERA, 10_000n * 1_000_000n],
+        [RAVI, PRIYA, 50n * 1_000_000n],
+      ].sort(),
+    );
+    t.expect(transfers.every((x) => x.txHash.startsWith("0x"))).toBe(true);
 
     const circle = await indexer.Circle.getOrThrow(CIRCLE);
     t.expect(circle).toMatchObject({

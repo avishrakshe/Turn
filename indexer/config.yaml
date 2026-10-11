@@ -39,6 +39,11 @@ contracts:
     abi_file_path: ./abis/CreditRegistry.json
     events:
       - event: RecordUpdated
+  - name: AUSD
+    # The settlement token (Agora AUSD). Only transfers that touch a Turn member are stored (handlers/AUSD.ts).
+    abi_file_path: ./abis/AUSD.json
+    events:
+      - event: Transfer
   - name: TurnAccount
     # EIP-7702 accounts: events are emitted *at the member's own address*. Registered when they join a circle.
     abi_file_path: ./abis/TurnAccount.json
@@ -48,11 +53,14 @@ contracts:
       - event: Pulled
 chains:
   - id: 10143 # Monad testnet — addresses from contracts/deployments/10143.json (env vars override for redeploys)
-    start_block: ${ENVIO_START_BLOCK:-65859276}
+    start_block: ${ENVIO_START_BLOCK:-70170111}
     contracts:
       - name: CircleFactory
-        address: "${ENVIO_FACTORY_ADDRESS:-0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb}"
+        address: "${ENVIO_FACTORY_ADDRESS:-0xCC90d683Aa8945dd7DD8C0be117e4b2592ECc2E0}"
       - name: CreditRegistry
-        address: "${ENVIO_REGISTRY_ADDRESS:-0x712d913a6fE057ae590da80941557EEbE93E9Bc0}"
+        address: "${ENVIO_REGISTRY_ADDRESS:-0x9824f180Af7D8c03de3c366F688eEA2d6193aDB7}"
+      - name: AUSD
+        # Agora's official testnet AUSD (docs.agora.finance/developer/contract-deployments)
+        address: "${ENVIO_TOKEN_ADDRESS:-0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC}"
       - name: Circle
       - name: TurnAccount

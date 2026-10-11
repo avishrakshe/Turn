@@ -226,6 +226,18 @@ type Session {
 }
 
 """
+AUSD sent directly from one person to another (not to or from a circle), where at least one side is a Turn member.
+"""
+type Transfer {
+  id: ID!
+  from: String! @index
+  to: String! @index
+  amount: BigInt!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+"""
 Money moving between display currencies: each contribution flows from the payer's currency to the recipient's.
 """
 type CorridorStats {

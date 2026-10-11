@@ -40,6 +40,10 @@ contracts:
     abi_file_path: ./abis/CreditRegistry.json
     events:
       - event: RecordUpdated
+  - name: AUSD
+    abi_file_path: ./abis/AUSD.json
+    events:
+      - event: Transfer
   - name: TurnAccount
     abi_file_path: ./abis/TurnAccount.json
     events:
@@ -57,5 +61,7 @@ chains:
         address: "${ENVIO_FACTORY_ADDRESS}"
       - name: CreditRegistry
         address: "${ENVIO_REGISTRY_ADDRESS}"
+      - name: AUSD
+        address: "${ENVIO_TOKEN_ADDRESS}"
       - name: Circle
       - name: TurnAccount
