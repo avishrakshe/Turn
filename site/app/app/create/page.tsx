@@ -1,9 +1,12 @@
 "use client";
 
-import { AppSkeleton } from "@/components/app/AppSkeleton";
 import { CreateFlow } from "@/components/app/CreateFlow";
-import { useHydrated } from "@/lib/app/hooks";
+import { SignInGate } from "@/components/app/SignInGate";
 
 export default function CreatePage() {
-  return useHydrated() ? <CreateFlow /> : <AppSkeleton />;
+  return (
+    <SignInGate>
+      <CreateFlow />
+    </SignInGate>
+  );
 }

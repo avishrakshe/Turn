@@ -4,6 +4,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Workspace packages ship TypeScript sources (the relayer is served from /api/relayer).
+  transpilePackages: ["@turn/contracts", "@turn/relayer"],
   async headers() {
     return [
       {

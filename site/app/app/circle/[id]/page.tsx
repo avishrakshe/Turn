@@ -1,11 +1,17 @@
 "use client";
 
-import { use } from "react";
+import { Suspense, use } from "react";
 import { AppSkeleton } from "@/components/app/AppSkeleton";
 import { CircleScreen } from "@/components/app/CircleScreen";
-import { useHydrated } from "@/lib/app/hooks";
+import { SignInGate } from "@/components/app/SignInGate";
 
 export default function CirclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return useHydrated() ? <CircleScreen id={id} /> : <AppSkeleton />;
+  return (
+    <SignInGate>
+      <Suspense fallback={<AppSkeleton />}>
+        <CircleScreen id={id} />
+      </Suspense>
+    </SignInGate>
+  );
 }

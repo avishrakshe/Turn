@@ -1,7 +1,14 @@
 import type { Mode } from "@/lib/economics/engine";
 
 export type TemplateId = "wedding" | "festival" | "business" | "emergency" | "custom";
-export type Frequency = "monthly" | "weekly";
+/** "fast" runs a round every five minutes, so a whole circle can be tried in one sitting on testnet. */
+export type Frequency = "monthly" | "weekly" | "fast";
+
+export const PERIOD_SECONDS: Record<Frequency, number> = { monthly: 30 * 86_400, weekly: 7 * 86_400, fast: 300 };
+
+export function frequencyOf(period: number): Frequency {
+  return period >= 28 * 86_400 ? "monthly" : period >= 7 * 86_400 ? "weekly" : "fast";
+}
 
 export interface Template {
   id: TemplateId;

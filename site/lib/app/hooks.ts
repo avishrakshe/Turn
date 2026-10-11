@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { langInfo, useLang } from "@/lib/i18n";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { langInfo, useLang, useT } from "@/lib/i18n";
 import { type DisplayCurrency, formatMoney } from "@/lib/money";
 import { FALLBACK_RATES, type Rates, toLocal, toUnits } from "./money";
 import { type State, store } from "./store";
+import type { Frequency } from "./templates";
 
 /**
  * Subscribe to a slice of the store. The selector must return something already in the state
@@ -65,9 +66,20 @@ export function useMoney() {
   return { fmt, local, units, currency, rates, live };
 }
 
-/** True when the person pays in stablecoins, so confirmations are wallet signatures, not Face ID. */
-export function usePayWithWallet(): boolean {
-  return useStore((s) => s.prefs.payWith === "stablecoin");
+/** How often a circle runs, in words: "every month", "12 months", "month". */
+export function useFrequencyText() {
+  const t = useT();
+  return useMemo(
+    () => ({
+      /** "every month" */
+      word: (f: Frequency) => (f === "fast" ? t("live.fastWord") : t(`create.frequencyWord.${f}`)),
+      /** "12 months": how long n rounds take. */
+      duration: (f: Frequency, n: number) => t(f === "monthly" ? "common.months" : f === "weekly" ? "common.weeks" : "live.minutes", { count: f === "fast" ? n * 5 : n }),
+      /** "month": one round. */
+      period: (f: Frequency) => (f === "fast" ? t("live.fastPeriod") : t(`settings.period.${f}`)),
+    }),
+    [t],
+  );
 }
 
 /** Short dates ("3 Oct", "3 अक्तू॰") with month names in the UI language. */

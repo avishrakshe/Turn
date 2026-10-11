@@ -1,13 +1,14 @@
 "use client";
 
+import { AppSkeleton } from "@/components/app/AppSkeleton";
 import { Home } from "@/components/app/Home";
 import { Welcome } from "@/components/app/Welcome";
-import { AppSkeleton } from "@/components/app/AppSkeleton";
-import { useHydrated, useStore } from "@/lib/app/hooks";
+import { useHydrated } from "@/lib/app/hooks";
+import { useSession } from "@/lib/live/session";
 
 export default function AppHome() {
   const hydrated = useHydrated();
-  const signedIn = useStore((s) => s.profile !== null);
+  const { address } = useSession();
   if (!hydrated) return <AppSkeleton />;
-  return signedIn ? <Home /> : <Welcome />;
+  return address ? <Home /> : <Welcome />;
 }

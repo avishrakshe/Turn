@@ -6,24 +6,36 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Stepper } from "@/components/ui/Stepper";
-import { useMoney, usePayWithWallet, useStore } from "@/lib/app/hooks";
+import { useFrequencyText, useMoney } from "@/lib/app/hooks";
 import { niceAmount } from "@/lib/app/money";
-import { store } from "@/lib/app/store";
-import { type Frequency, MAX_MEMBERS, MIN_MEMBERS, TEMPLATES, type TemplateId } from "@/lib/app/templates";
+import { type Frequency, MAX_MEMBERS, MIN_MEMBERS, PERIOD_SECONDS, TEMPLATES, type TemplateId } from "@/lib/app/templates";
 import { cn } from "@/lib/cn";
 import type { Mode } from "@/lib/economics/engine";
 import { useMessages, useT } from "@/lib/i18n";
+import { createCircleCalls, run, testDollarsCall } from "@/lib/live/actions";
+import { passkeyErrorKind } from "@/lib/live/capability";
+import { balanceOf, predictCircle } from "@/lib/live/chain";
+import { config } from "@/lib/live/config";
+import { setFlow, tap } from "@/lib/live/metrics";
+import { useNames } from "@/lib/live/names";
+import { inviteSecret } from "@/lib/live/passkey";
+import { useSession } from "@/lib/live/session";
 import { currencyLocale, formatMoney, formatMoneyParts } from "@/lib/money";
 import { useApp } from "./AppProvider";
 
+const FAUCET_CAP = 1_000n * 10n ** 6n;
+/** Factory limit per contribution: 25 AUSD during the mainnet beta, 1,000 test AUSD on testnet. */
+const CAP = config.chainId === 143 ? 25n * 10n ** 6n : 1_000n * 10n ** 6n;
+
 export function CreateFlow() {
   const t = useT();
-  const byWallet = usePayWithWallet();
   const m = useMessages();
   const router = useRouter();
-  const { passkey, receipt } = useApp();
+  const { receipt } = useApp();
   const { currency, rates, units, fmt } = useMoney();
-  const profile = useStore((s) => s.profile);
+  const freq = useFrequencyText();
+  const { confirm, unlock } = useSession();
+  const names = useNames();
 
   const [step, setStep] = useState(0);
   const [template, setTemplate] = useState<TemplateId | null>(null);
@@ -32,15 +44,16 @@ export function CreateFlow() {
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [mode, setMode] = useState<Mode>("FIXED_ORDER");
   const [name, setName] = useState("");
-  const [yourName, setYourName] = useState(profile?.name ?? "");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const money = (x: number) => formatMoney(x, currency);
   const symbol = formatMoneyParts(0, currency).find((p) => p.type === "currency")?.value ?? currency;
   const grouped = (x: number) => new Intl.NumberFormat(currencyLocale[currency]).format(x);
-  const periodWord = t(`create.frequencyWord.${frequency}`);
-  const duration = t(frequency === "monthly" ? "common.months" : "common.weeks", { count: members });
-  const canNext = step === 0 ? template !== null : step === 1 ? amount > 0 : step === 2 ? true : name.trim() !== "" && yourName.trim() !== "";
+  const periodWord = freq.word(frequency);
+  const duration = freq.duration(frequency, members);
+  const tooBig = amount > 0 && units(amount) > CAP;
+  const canNext = step === 0 ? template !== null : step === 1 ? amount > 0 && !tooBig : step === 2 ? true : name.trim() !== "";
 
   function pick(id: TemplateId) {
     const tpl = TEMPLATES.find((x) => x.id === id)!;
@@ -50,21 +63,42 @@ export function CreateFlow() {
     setFrequency(tpl.frequency);
     setMode(tpl.mode);
     setName(id === "custom" ? "" : t(`create.templates.${id}.name`));
-    store.tap();
+    tap();
     setStep(1);
   }
 
+  // One signed batch, sponsored by the relayer: approve the deposit, create the circle, grant auto-pay. Starting a
+  // circle moves money, so it asks for Face ID (no second prompt if you created your account moments ago).
   async function create() {
-    store.tap();
-    const contribution = units(amount);
-    const ok = await passkey(t("create.passkeySummary", { name: name.trim(), amount: fmt(contribution) }));
-    if (!ok) return;
+    tap();
+    setFlow("create");
     setBusy(true);
-    // Optimistic: Monad confirms in about a second; the demo mirrors that.
-    await new Promise((r) => setTimeout(r, 600));
-    const id = store.createCircle({ name, template: template ?? "custom", contribution, n: members, frequency, mode, yourName });
-    receipt(name.trim(), t("create.reviewLines.deposit", { amount: fmt(contribution) }));
-    router.push(`/app/circle/${id}`);
+    setErr(null);
+    try {
+      const contribution = units(amount);
+      const account = await confirm();
+      const predicted = await predictCircle(account.address);
+      // Invite secret from the passkey's invite key: rebuilt on any device, never stored.
+      const secret = await inviteSecret(await unlock("invite"), predicted);
+      const calls = createCircleCalls(
+        account.address,
+        predicted,
+        { size: members, contribution, period: PERIOD_SECONDS[frequency], auction: mode === "AUCTION", currency },
+        secret,
+      );
+      if (config.testToken && (await balanceOf(account.address)) < contribution) {
+        const topUp = contribution * 3n > FAUCET_CAP ? FAUCET_CAP : contribution * 3n;
+        calls.unshift(...testDollarsCall(account.address, topUp));
+      }
+      const { txHash } = await run(account, calls);
+      names.remember(predicted, name.trim());
+      receipt(name.trim(), txHash, t("create.reviewLines.deposit", { amount: fmt(contribution) }));
+      router.push(`/app/circle/${predicted}?created=1`);
+    } catch (e) {
+      const kind = passkeyErrorKind(e);
+      setErr(kind === "cancelled" ? t("live.cancelled") : kind === "unsupported" ? t("live.noPrf") : (e as Error).message || t("errors.generic"));
+      setBusy(false);
+    }
   }
 
   return (
@@ -152,6 +186,11 @@ export function CreateFlow() {
               </Button>
             </div>
             <p className="text-ink-muted text-sm">{t("create.membersHint")}</p>
+            {tooBig && (
+              <p role="alert" className="text-danger text-sm">
+                {t("live.overCap", { amount: fmt(CAP) })}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-sm font-semibold">{t("create.frequency")}</span>
@@ -162,6 +201,7 @@ export function CreateFlow() {
               options={[
                 { value: "monthly", label: t("create.monthly") },
                 { value: "weekly", label: t("create.weekly") },
+                { value: "fast", label: t("live.fast") },
               ]}
               className="flex w-full"
             />
@@ -207,22 +247,6 @@ export function CreateFlow() {
             </label>
             <input id="circle-name" value={name} onChange={(e) => setName(e.target.value)} className="border-line-strong bg-paper-raised min-h-12 rounded-xl border px-4" maxLength={40} />
           </div>
-          {!profile && (
-            <div className="flex flex-col gap-2">
-              <label htmlFor="your-name" className="text-sm font-semibold">
-                {t("create.yourName")}
-              </label>
-              <input
-                id="your-name"
-                value={yourName}
-                onChange={(e) => setYourName(e.target.value)}
-                placeholder={t("create.yourNamePlaceholder")}
-                autoComplete="given-name"
-                className="border-line-strong bg-paper-raised min-h-12 rounded-xl border px-4"
-                maxLength={30}
-              />
-            </div>
-          )}
           <Card>
             <ul className="flex flex-col gap-3">
               {[
@@ -243,6 +267,12 @@ export function CreateFlow() {
             </ul>
           </Card>
           <p className="text-ink-muted text-sm">{t("create.whatNext")}</p>
+          {config.testToken && <p className="text-ink-muted text-xs">{t("live.testMoneyDeposit")}</p>}
+          {err && (
+            <p role="alert" className="text-danger text-sm">
+              {err}
+            </p>
+          )}
         </div>
       )}
 
@@ -251,7 +281,7 @@ export function CreateFlow() {
         <div
           className={cn(
             "from-paper via-paper sticky -mx-4 bg-gradient-to-t via-70% to-transparent px-4 pt-6 pb-3",
-            profile ? "bottom-[calc(4.4rem+env(safe-area-inset-bottom))] sm:bottom-0" : "bottom-[env(safe-area-inset-bottom)]",
+            "bottom-[calc(4.4rem+env(safe-area-inset-bottom))] sm:bottom-0",
           )}
         >
           {step < 3 ? (
@@ -260,7 +290,7 @@ export function CreateFlow() {
             </Button>
           ) : (
             <Button size="lg" className="w-full" onClick={create} disabled={!canNext} busy={busy}>
-              {t(byWallet ? "wallet.createCta" : "create.confirm")}
+              {t("create.confirm")}
             </Button>
           )}
         </div>

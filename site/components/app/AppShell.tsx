@@ -6,10 +6,11 @@ import { type ReactNode, useEffect, useState } from "react";
 import { TurnLogo } from "@/components/ring/TurnMark";
 import { Sheet } from "@/components/ui/Sheet";
 import { cn } from "@/lib/cn";
-import { useStore } from "@/lib/app/hooks";
 import { useT } from "@/lib/i18n";
+import { config } from "@/lib/live/config";
+import { useSession } from "@/lib/live/session";
 import { cachePage } from "@/lib/pwa";
-import { WalletButton } from "./Wallet";
+import { SessionBanner } from "./SessionBanner";
 
 const icon = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
@@ -47,14 +48,14 @@ const TABS: Array<{ href: string; key: string; icon: ReactNode }> = [
 ];
 
 /**
- * The app frame: a phone-width column and tab navigation once signed in. First-contact
- * screens (welcome, joining) spell out that this is a demo; after that the Demo badge stays
- * in the header and opens the same explanation.
+ * The app frame: a phone-width column and tab navigation once signed in. On testnet the header
+ * says so, and the badge explains that the money is a test token with no value.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
   const pathname = usePathname();
-  const signedIn = useStore((s) => s.profile !== null);
+  const signedIn = useSession().address !== null;
+  const testnet = config.chainId !== 143;
   const [about, setAbout] = useState(false);
   const active = (href: string) => (href === "/app" ? pathname === "/app" : pathname.startsWith(href));
   useEffect(() => cachePage(pathname), [pathname]);
@@ -66,15 +67,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link href="/app" className="-ms-1 rounded-lg p-1" aria-label={t("nav.brandHome")}>
             <TurnLogo />
           </Link>
-          <button
-            type="button"
-            onClick={() => setAbout(true)}
-            aria-haspopup="dialog"
-            className="bg-warning-soft text-warning ms-1 inline-flex min-h-8 items-center gap-1.5 rounded-pill px-2.5 text-xs font-semibold"
-          >
-            <span aria-hidden className="bg-warning size-1.5 rounded-full" />
-            {t("common.demoBadge")}
-          </button>
+          {testnet && (
+            <button
+              type="button"
+              onClick={() => setAbout(true)}
+              aria-haspopup="dialog"
+              className="bg-warning-soft text-warning ms-1 inline-flex min-h-8 items-center gap-1.5 rounded-pill px-2.5 text-xs font-semibold"
+            >
+              <span aria-hidden className="bg-warning size-1.5 rounded-full" />
+              {t("live.testnetBadge")}
+            </button>
+          )}
           <div className="ms-auto flex items-center gap-2">
           {signedIn && (
             <nav aria-label={t("nav.main")} className="hidden sm:block">
@@ -99,10 +102,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </ul>
             </nav>
           )}
-          <WalletButton />
           </div>
         </div>
-        {!signedIn &&<p className="border-line text-ink-muted border-t px-4 py-1.5 text-center text-xs">{t("common.demoBanner")}</p>}
+        {signedIn ? <SessionBanner /> : testnet && <p className="border-line text-ink-muted border-t px-4 py-1.5 text-center text-xs">{t("live.testnetBanner")}</p>}
       </header>
 
       <main id="main" className={cn("mx-auto w-full max-w-xl flex-1 px-4 pt-6", signedIn ? "pb-32 sm:pb-12" : "pb-12")}>
@@ -140,8 +142,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       )}
 
-      <Sheet open={about} onClose={() => setAbout(false)} title={t("common.demoBadge")}>
-        <p className="pb-6">{t("common.demoBanner")}</p>
+      <Sheet open={about} onClose={() => setAbout(false)} title={t("live.testnetBadge")}>
+        <p className="pb-6">{t("live.testnetAbout")}</p>
       </Sheet>
     </div>
   );

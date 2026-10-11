@@ -1,9 +1,12 @@
 "use client";
 
-import { AppSkeleton } from "@/components/app/AppSkeleton";
 import { ScoreScreen } from "@/components/app/ScoreScreen";
-import { useHydrated } from "@/lib/app/hooks";
+import { SignInGate } from "@/components/app/SignInGate";
 
 export default function ScorePage() {
-  return useHydrated() ? <ScoreScreen /> : <AppSkeleton />;
+  return (
+    <SignInGate>
+      <ScoreScreen />
+    </SignInGate>
+  );
 }
