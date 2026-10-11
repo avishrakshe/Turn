@@ -12,10 +12,11 @@ import { type Frequency, MAX_MEMBERS, MIN_MEMBERS, PERIOD_SECONDS, TEMPLATES, ty
 import { cn } from "@/lib/cn";
 import type { Mode } from "@/lib/economics/engine";
 import { useMessages, useT } from "@/lib/i18n";
-import { createCircleCalls, run, testDollarsCall } from "@/lib/live/actions";
+import { createCircleCalls, run } from "@/lib/live/actions";
 import { passkeyErrorKind } from "@/lib/live/capability";
-import { balanceOf, predictCircle } from "@/lib/live/chain";
-import { config } from "@/lib/live/config";
+import { predictCircle } from "@/lib/live/chain";
+import { config, isTestnet } from "@/lib/live/config";
+import { topUpFor } from "@/lib/live/funds";
 import { setFlow, tap } from "@/lib/live/metrics";
 import { useNames } from "@/lib/live/names";
 import { inviteSecret } from "@/lib/live/passkey";
@@ -23,7 +24,6 @@ import { useSession } from "@/lib/live/session";
 import { currencyLocale, formatMoney, formatMoneyParts } from "@/lib/money";
 import { useApp } from "./AppProvider";
 
-const FAUCET_CAP = 1_000n * 10n ** 6n;
 /** Factory limit per contribution: 25 AUSD during the mainnet beta, 1,000 test AUSD on testnet. */
 const CAP = config.chainId === 143 ? 25n * 10n ** 6n : 1_000n * 10n ** 6n;
 
@@ -86,10 +86,7 @@ export function CreateFlow() {
         { size: members, contribution, period: PERIOD_SECONDS[frequency], auction: mode === "AUCTION", currency },
         secret,
       );
-      if (config.testToken && (await balanceOf(account.address)) < contribution) {
-        const topUp = contribution * 3n > FAUCET_CAP ? FAUCET_CAP : contribution * 3n;
-        calls.unshift(...testDollarsCall(account.address, topUp));
-      }
+      calls.unshift(...(await topUpFor(account.address, contribution)));
       const { txHash } = await run(account, calls);
       names.remember(predicted, name.trim());
       receipt(name.trim(), txHash, t("create.reviewLines.deposit", { amount: fmt(contribution) }));
@@ -267,7 +264,7 @@ export function CreateFlow() {
             </ul>
           </Card>
           <p className="text-ink-muted text-sm">{t("create.whatNext")}</p>
-          {config.testToken && <p className="text-ink-muted text-xs">{t("live.testMoneyDeposit")}</p>}
+          {isTestnet && <p className="text-ink-muted text-xs">{t("live.testMoneyDeposit")}</p>}
           {err && (
             <p role="alert" className="text-danger text-sm">
               {err}

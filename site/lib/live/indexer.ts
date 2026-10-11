@@ -156,6 +156,18 @@ export async function sessions(member: string) {
   );
 }
 
+export type TransferRow = { id: string; from: string; to: string; amount: string; timestamp: string; txHash: string };
+
+/** Your AUSD sends and receipts with other people (not circle payments), newest first. */
+export async function myTransfers(member: string, limit = 10) {
+  return gql<{ Transfer: TransferRow[] }>(
+    `query ($m: String!, $n: Int!) {
+      Transfer(where: { _or: [{ from: { _eq: $m } }, { to: { _eq: $m } }] }, order_by: { timestamp: desc }, limit: $n) { id from to amount timestamp txHash }
+    }`,
+    { m: member, n: limit },
+  );
+}
+
 export async function networkStats() {
   return gql<{
     GlobalStats: {

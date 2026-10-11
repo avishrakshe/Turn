@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import { balanceOf } from "./chain";
-import { circleDetail, memberProfile, myCircles, sessions } from "./indexer";
+import { circleDetail, memberProfile, myCircles, myTransfers, sessions } from "./indexer";
 import { useSession } from "./session";
 
 export function useBalance() {
@@ -22,6 +22,12 @@ export function useMyCircles() {
 export function useGrants() {
   const { address } = useSession();
   return useQuery({ queryKey: ["grants", address], queryFn: () => sessions(address as Address), enabled: Boolean(address), refetchInterval: 8_000 });
+}
+
+/** Money sent to and received from other people (from the indexer's Transfer entity). */
+export function useTransfers() {
+  const { address } = useSession();
+  return useQuery({ queryKey: ["transfers", address], queryFn: () => myTransfers(address as Address), enabled: Boolean(address), refetchInterval: 4_000 });
 }
 
 export function useCircle(circle: Address) {

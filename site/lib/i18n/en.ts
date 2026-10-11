@@ -453,8 +453,33 @@ export const en = {
     recentRuns: "Recent runs",
     metricsNote: "Each new account reports its own run once: the time from first opening Turn to its first confirmed transaction on Monad, with taps and Face ID prompts along the way. No personal data is kept.",
     metricsNotPersistent: "This server keeps the numbers in memory, so they reset when it restarts.",
+    ausdBalance: "AUSD {amount}",
+    testAusdNote: "Agora's official test AUSD on Monad testnet. No real value.",
+    getTestAusd: "Get test AUSD",
+    activity: "Money in and out",
+    receivedFrom: "From {name}",
+    sentTo: "To {name}",
+    agoraFaucet: "Agora test faucet",
   },
-} as const;
+  send: {
+    cta: "Send money",
+    title: "Send money",
+    lead: "To someone in one of your circles. They get dollars (AUSD) right away, wherever they live.",
+    who: "Who to",
+    noPeople: "Join or start a circle first. You can send to anyone you save with.",
+    toAddress: "Or paste an address",
+    amount: "Amount ({currency})",
+    equals: "= AUSD {amount}.",
+    available: "You have {amount}.",
+    tooMuch: "That's more than you have.",
+    testnet: "Testnet: this sends test AUSD, which has no value.",
+    confirm: "Send {amount} to {name}",
+    sent: "Sent {amount} to {name}",
+    doneTitle: "Sent",
+    doneBody: "It's in {name}'s account now. It shows on their home screen.",
+    viewTx: "View the transaction",
+    another: "Send more",
+  },} as const;
 
 type Widen<T> = T extends string ? string : T extends readonly string[] ? readonly string[] : { [K in keyof T]: Widen<T[K]> };
 export type Messages = Widen<typeof en>;

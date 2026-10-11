@@ -9,15 +9,19 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useDate, useMoney } from "@/lib/app/hooks";
 import { useT } from "@/lib/i18n";
 import { run, testDollarsCall } from "@/lib/live/actions";
-import { config } from "@/lib/live/config";
+import { faucetKind, isTestnet } from "@/lib/live/config";
+import { requestTestAusd } from "@/lib/live/funds";
 import { useBalance, useGrants, useMyCircles, useNow } from "@/lib/live/hooks";
 import { useNames } from "@/lib/live/names";
 import { useSession } from "@/lib/live/session";
+import { Activity } from "./Activity";
 import { useApp } from "./AppProvider";
 import { CircleCard, circleFallbackName } from "./CircleCard";
 import { InstallCard } from "./InstallCard";
 
-const FAUCET = 300n * 10n ** 6n;
+/** MockAUSD mints this much per tap; Agora's faucet decides its own drip (10,000 test AUSD today). */
+const MOCK_DRIP = 300n * 10n ** 6n;
+const ausd = (units: bigint) => (Number(units) / 1e6).toLocaleString("en-US", { maximumFractionDigits: 2 });
 const WEEK = 7 * 86_400;
 
 export function Home() {
@@ -53,9 +57,15 @@ export function Home() {
     setBusy(true);
     setErr(null);
     try {
-      const acct = await quick();
-      const { txHash } = await run(acct, testDollarsCall(acct.address, FAUCET));
-      receipt(t("live.testMoneyAdded", { amount: fmt(FAUCET) }), txHash);
+      if (faucetKind === "agora") {
+        // Agora's faucet pays the recipient directly: no signature needed, the server covers the gas.
+        const { txHash, amount } = await requestTestAusd(address!);
+        receipt(t("live.testMoneyAdded", { amount: fmt(amount) }), txHash);
+      } else {
+        const acct = await quick();
+        const { txHash } = await run(acct, testDollarsCall(acct.address, MOCK_DRIP));
+        receipt(t("live.testMoneyAdded", { amount: fmt(MOCK_DRIP) }), txHash);
+      }
       await balance.refetch();
     } catch (e) {
       setErr((e as Error).message || t("errors.generic"));
@@ -78,11 +88,19 @@ export function Home() {
         <p className="font-display tabular text-4xl" data-testid="balance">
           {balance.data === undefined ? <Skeleton className="h-10 w-40" /> : fmt(balance.data)}
         </p>
-        <p className="text-ink-muted text-xs">{config.testToken ? t("live.testMoneyNote") : t("live.realMoneyNote")}</p>
+        {balance.data !== undefined && (
+          <p className="tabular text-ink-muted text-sm" data-testid="ausd-balance">
+            {t("live.ausdBalance", { amount: ausd(balance.data) })}
+          </p>
+        )}
+        <p className="text-ink-muted text-xs">{isTestnet ? t(faucetKind === "agora" ? "live.testAusdNote" : "live.testMoneyNote") : t("live.realMoneyNote")}</p>
         <div className="flex flex-wrap gap-2">
-          {config.testToken && (
+          <ButtonLink href="/app/send" variant="primary">
+            {t("send.cta")}
+          </ButtonLink>
+          {faucetKind && (
             <Button variant="secondary" onClick={getTestMoney} busy={busy}>
-              {t("live.getTestMoney", { amount: fmt(FAUCET) })}
+              {faucetKind === "agora" ? t("live.getTestAusd") : t("live.getTestMoney", { amount: fmt(MOCK_DRIP) })}
             </Button>
           )}
         </div>
@@ -132,6 +150,8 @@ export function Home() {
           </ul>
         )}
       </section>
+
+      <Activity />
 
       <ButtonLink href="/app/create" size="lg">
         {t("home.start")}

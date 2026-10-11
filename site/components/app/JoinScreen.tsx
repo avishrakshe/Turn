@@ -13,18 +13,17 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useDate, useFrequencyText, useMoney } from "@/lib/app/hooks";
 import { frequencyOf } from "@/lib/app/templates";
 import { useT } from "@/lib/i18n";
-import { joinCalls, run, testDollarsCall } from "@/lib/live/actions";
+import { joinCalls, run } from "@/lib/live/actions";
 import { passkeyErrorKind } from "@/lib/live/capability";
-import { balanceOf, circleInviteHash, circleParams } from "@/lib/live/chain";
-import { config } from "@/lib/live/config";
+import { circleInviteHash, circleParams } from "@/lib/live/chain";
+import { isTestnet } from "@/lib/live/config";
+import { topUpFor } from "@/lib/live/funds";
 import { circleDetail } from "@/lib/live/indexer";
 import { setFlow, startRun, tap } from "@/lib/live/metrics";
 import { useNames } from "@/lib/live/names";
 import { useSession } from "@/lib/live/session";
 import { useApp } from "./AppProvider";
 import { circleFallbackName } from "./CircleCard";
-
-const FAUCET_CAP = 1_000n * 10n ** 6n;
 
 /**
  * Join from an invite link. For someone new, this one Face ID creates their account and signs the join: approve the
@@ -95,10 +94,7 @@ export function JoinScreen({ code }: { code: string }) {
       const acct = session.address ? await session.confirm() : await session.create(yourName.trim());
       if (!session.address && yourName.trim()) await names.setMe(yourName.trim());
       const calls = joinCalls(acct.address, circle, { contribution: p.contribution, entryDeposit: p.entryDeposit, period: p.period, n: p.n }, secret, currency);
-      if (config.testToken && (await balanceOf(acct.address)) < p.entryDeposit) {
-        const topUp = p.contribution * 3n > FAUCET_CAP ? FAUCET_CAP : p.contribution * 3n;
-        calls.unshift(...testDollarsCall(acct.address, topUp));
-      }
+      calls.unshift(...(await topUpFor(acct.address, p.entryDeposit)));
       const { txHash } = await run(acct, calls);
       if (suggested) names.remember(circle, suggested);
       receipt(t("join.joined"), txHash, t("join.whatNext", { amount: fmt(p.entryDeposit) }));
@@ -182,7 +178,7 @@ export function JoinScreen({ code }: { code: string }) {
             </div>
           )}
           <p className="text-ink-muted text-sm">{t("join.whatNext", { amount: fmt(p.entryDeposit) })}</p>
-          {config.testToken && <p className="text-ink-muted text-xs">{t("live.testMoneyDeposit")}</p>}
+          {isTestnet && <p className="text-ink-muted text-xs">{t("live.testMoneyDeposit")}</p>}
           {err && (
             <p role="alert" className="text-danger text-sm">
               {err}

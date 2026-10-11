@@ -44,6 +44,8 @@ async function monBalance(address: string): Promise<bigint> {
 const addressOf = (page: Page) => page.evaluate(() => sessionStorage.getItem("turn.address"));
 
 let creator: User;
+let joiner: User;
+let joinerAddress = "";
 let invite = "";
 let circlePath = "";
 
@@ -84,15 +86,15 @@ test.describe.serial("Turn live app (Monad testnet)", () => {
   });
 
   test("a second new person joins from the link with one passkey prompt and no MON", async ({ browser }) => {
-    const u = await newUser(browser);
+    const u = (joiner = await newUser(browser));
     await u.page.goto(invite);
     await expect(u.page.getByTestId("circle-name")).toHaveText("Family circle");
     await u.page.getByLabel("Your name").fill("Ravi");
     await u.page.getByTestId("join").click();
     await expect(u.page).toHaveURL(/\/app\/circle\/0x/, { timeout: 90_000 });
     expect(u.ceremonies).toEqual({ created: 1, asserted: 0 });
-    expect(await monBalance((await addressOf(u.page))!)).toBe(0n);
-    await u.ctx.close();
+    joinerAddress = (await addressOf(u.page))!;
+    expect(await monBalance(joinerAddress)).toBe(0n);
   });
 
   test("stateless: wipe everything, reload, and it all comes back from passkey + chain + Envio", async () => {
@@ -121,6 +123,28 @@ test.describe.serial("Turn live app (Monad testnet)", () => {
     await page.locator(`a[href="${circlePath}"]`).click();
     await expect(page.getByTestId("invite-link")).toHaveText(invite);
     expect(creator.ceremonies.asserted - before.asserted).toBe(1);
+  });
+
+  test("AUSD: send money to a circle member, who sees it arrive (balance shown in local currency and AUSD)", async () => {
+    const { page } = creator;
+    // In-app navigation from the circle page keeps the session open.
+    await page.getByRole("link", { name: "Home" }).first().click();
+    await expect(page.getByTestId("ausd-balance")).toContainText("AUSD");
+    await page.getByRole("link", { name: "Send money" }).click();
+    await page.getByTestId("send-people").getByRole("button").first().click();
+    await page.getByLabel(/^Amount/).fill("5");
+    await page.getByTestId("send").click();
+    await expect(page.getByTestId("send-done")).toBeVisible({ timeout: 90_000 });
+    const href = await page.getByTestId("send-tx").getAttribute("href");
+    console.log(`[send] ${href}`);
+    expect(href).toMatch(/\/tx\/0x[0-9a-f]{64}$/);
+
+    // The recipient, in their own browser: the transfer shows under "Money in and out" (from the Envio indexer).
+    await joiner.page.goto("/app");
+    const gate = joiner.page.getByRole("button", { name: "I already use Turn" });
+    if (await gate.isVisible().catch(() => false)) await gate.click();
+    await expect(joiner.page.getByTestId("activity")).toContainText("From", { timeout: 90_000 });
+    await expect(joiner.page.getByTestId("activity")).toContainText("+");
   });
 
   test("time to first transaction is reported to /metrics", async ({ request }) => {
