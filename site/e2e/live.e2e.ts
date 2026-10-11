@@ -15,6 +15,12 @@ async function newUser(browser: Browser): Promise<User> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log(`[pageerror] ${e.message}`));
+  // Proof for the write-up: every sponsored transaction the relayer submits.
+  page.on("response", async (r) => {
+    if (!r.url().endsWith("/v1/relay")) return;
+    const body = (await r.json().catch(() => null)) as { ok?: boolean; txHash?: string } | null;
+    if (body?.txHash) console.log(`[tx] ${body.txHash}`);
+  });
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("WebAuthn.enable");
   await cdp.send("WebAuthn.addVirtualAuthenticator", {
@@ -51,6 +57,7 @@ test.describe.serial("Turn live app (Monad testnet)", () => {
     await expect(page.getByTestId("balance")).toBeVisible();
     const me = (await addressOf(page))!;
     expect(me).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    console.log(`[account] ${me}`);
     expect(await monBalance(me)).toBe(0n);
 
     await page.getByRole("link", { name: "Start a circle" }).first().click();
@@ -66,6 +73,7 @@ test.describe.serial("Turn live app (Monad testnet)", () => {
 
     await expect(page).toHaveURL(/\/app\/circle\/0x[0-9a-fA-F]{40}/, { timeout: 90_000 });
     circlePath = new URL(page.url()).pathname;
+    console.log(`[circle] ${circlePath}`);
     await expect(page.getByTestId("invite-link")).toBeVisible();
     invite = (await page.getByTestId("invite-link").textContent())!.trim();
     expect(invite).toMatch(/\/app\/join\/0x[0-9a-fA-F]{40}\?s=0x[0-9a-f]{64}/);
@@ -93,7 +101,6 @@ test.describe.serial("Turn live app (Monad testnet)", () => {
     await expect(page.getByTestId("circles").locator("li").first()).toBeVisible();
     const circles = await page.getByTestId("circles").locator("li").count();
     const balance = await page.getByTestId("balance").textContent();
-    const name = await page.getByRole("heading", { level: 1 }).textContent();
     const before = { ...creator.ceremonies };
 
     // Same state as a fresh browser profile: only the passkey (on the authenticator) survives.
@@ -107,7 +114,7 @@ test.describe.serial("Turn live app (Monad testnet)", () => {
     await page.getByRole("button", { name: "I already use Turn" }).click();
     await expect(page.getByTestId("circles").locator("li")).toHaveCount(circles);
     await expect(page.getByTestId("balance")).toHaveText(balance!);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(name!); // name from the encrypted vault
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hi, Priya"); // name from the encrypted vault
     expect(creator.ceremonies.asserted - before.asserted).toBe(1);
 
     // In-app navigation keeps the session; the invite link is rebuilt from the passkey, not from storage.
