@@ -1,0 +1,13 @@
+{
+  "accountImplementation": "0x64a831694D4Eea3A08abD77303d572244c366898",
+  "chainId": 10143,
+  "circleImplementation": "0x57A61bA3AC15F8f511a7C0B3b861B23537d80668",
+  "creForwarder": "0xB9F79d863261869B234c481D1f9A7af84AeAd192",
+  "factory": "0xA6492Ca239dDd7653525b33f16bAE7F4955F8eDb",
+  "keeper": "0x92B4984540a62278051a832C3370223244080771",
+  "mockToken": true,
+  "owner": "0xA7d618711E99b907265781aA16ba75262Af5c411",
+  "registry": "0x712d913a6fE057ae590da80941557EEbE93E9Bc0",
+  "startBlock": 65859276,
+  "token": "0xf5f909b2d7Da364246D61C307b062844EEF86e9a"
+}

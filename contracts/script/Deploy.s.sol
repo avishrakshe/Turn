@@ -24,7 +24,8 @@ import {MockAUSD} from "../src/test-tokens/MockAUSD.sol";
 ///
 /// Addresses verified 2026-09-26:
 ///   AUSD (Monad mainnet)  0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a   docs.agora.finance/developer/contract-deployments
-///   AUSD (Monad testnet)  0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC   (same page; no public faucet found)
+///   AUSD (Monad testnet)  0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC   (same page; faucet 0xd236c18D274E54FAccC3dd9DDA4b27965a73ee6C,
+///                         requestFunds(address): 10,000 AUSD per drip, verified onchain 2026-10-11)
 ///   CRE forwarders        docs.chain.link/cre/guides/workflow/using-evm-client/forwarder-directory-ts
 contract Deploy is Script {
     uint256 internal constant MONAD_MAINNET = 143;
